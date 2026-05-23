@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
-import { getProjectBySlug, getProjectSlugs } from "@/lib/queries/projects";
+import { getProjectBySlug } from "@/lib/queries/projects";
 import { projectJsonLd, siteUrl } from "@/lib/seo";
 
 type PageProps = {
@@ -16,11 +16,7 @@ type PageProps = {
 };
 
 export const revalidate = 60;
-
-export async function generateStaticParams() {
-  const projects = await getProjectSlugs();
-  return projects.map((project) => ({ slug: project.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;

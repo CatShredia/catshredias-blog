@@ -25,9 +25,11 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-RUN mkdir -p /app/uploads && chown nextjs:nodejs /app/uploads
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN mkdir -p /app/uploads && chown nextjs:nodejs /app/uploads \
+  && chmod +x /app/docker-entrypoint.sh
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-CMD ["node", "server.js"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

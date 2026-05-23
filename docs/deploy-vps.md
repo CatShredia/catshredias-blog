@@ -2,10 +2,12 @@
 
 Пошаговая инструкция: **два независимых Docker-стека** на одном сервере Timeweb, единый **Nginx** на хосте (TLS, маршрутизация по доменам).
 
-| Домен | Проект | Репозиторий | Порт на localhost |
-|-------|--------|-------------|-------------------|
-| `https://catshredia.ru` | Портфолио + блог (Next.js) | `catshredias-blog/` | `127.0.0.1:3000` |
-| `https://runews.catshredia.ru` | Runews (Blazor + API) | `Coursework/` | `127.0.0.1:8080` |
+
+| Домен                          | Проект                     | Репозиторий         | Порт на localhost |
+| ------------------------------ | -------------------------- | ------------------- | ----------------- |
+| `https://catshredia.ru`        | Портфолио + блог (Next.js) | `catshredias-blog/` | `127.0.0.1:3000`  |
+| `https://runews.catshredia.ru` | Runews (Blazor + API)      | `Coursework/`       | `127.0.0.1:8080`  |
+
 
 У каждого сервиса **своя PostgreSQL** (разные Docker-тома, разные порты для отладки с ПК: `55433` и `55432`).
 
@@ -42,12 +44,14 @@
 
 ## Требования к VPS
 
-| Параметр | Рекомендация |
-|----------|--------------|
-| ОС | Ubuntu 22.04 / 24.04 LTS |
+
+| Параметр  | Рекомендация                                  |
+| --------- | --------------------------------------------- |
+| ОС        | Ubuntu 22.04 / 24.04 LTS                      |
 | CPU / RAM | 2 vCPU, **4 GB RAM** (минимум 2 GB, но тесно) |
-| Диск | от 30 GB |
-| Продукт | VPS/VDS или Timeweb Cloud (не shared-хостинг) |
+| Диск      | от 30 GB                                      |
+| Продукт   | VPS/VDS или Timeweb Cloud (не shared-хостинг) |
+
 
 На сервере: **Docker Engine + Compose plugin**, **Nginx**, **Certbot**.
 
@@ -59,11 +63,13 @@
 
 В панели DNS для зоны `catshredia.ru`:
 
-| Тип | Имя | Значение |
-|-----|-----|----------|
-| A | `@` | `IP_ВАШЕГО_VPS` |
-| A | `runews` | тот же IP |
-| A или CNAME | `www` | `@` или IP |
+
+| Тип         | Имя      | Значение        |
+| ----------- | -------- | --------------- |
+| A           | `@`      | `IP_ВАШЕГО_VPS` |
+| A           | `runews` | тот же IP       |
+| A или CNAME | `www`    | `@` или IP      |
+
 
 Проверка (с ПК или сервера):
 
@@ -82,11 +88,13 @@ dig +short runews.catshredia.ru A
 
 Входящий TCP, подсеть `0.0.0.0/0`:
 
-| Порт | Назначение |
-|------|------------|
-| 22 | SSH |
-| 80 | HTTP (Certbot + редирект) |
-| 443 | HTTPS |
+
+| Порт | Назначение                |
+| ---- | ------------------------- |
+| 22   | SSH                       |
+| 80   | HTTP (Certbot + редирект) |
+| 443  | HTTPS                     |
+
 
 **Не открывать** наружу: `3000`, `8080`, `55432`, `55433`, `8025`.
 
@@ -263,6 +271,12 @@ docker compose up -d
 
 **Не запускайте `npm install` на хосте VPS** — там Node 18, а проекту нужен Node 22; сборка идёт только внутри Docker.
 
+Публичные страницы с Prisma помечены `dynamic = "force-dynamic"` — `**docker compose build` не требует запущенной БД** (данные читаются при первом запросе после `up`).
+
+#### Ошибка `Environment variable not found: DATABASE_URL` при `npm run build`
+
+Старая версия кода вызывала Prisma на этапе `next build`. Обновите репозиторий (`git pull`) — сборка образа не обращается к PostgreSQL. БД нужна только при **запуске** контейнера (`docker compose up`).
+
 #### Ошибка `npm ci` / lock file out of sync
 
 ```text
@@ -286,17 +300,15 @@ docker run --rm \
 rm -rf ~/catshredias-blog/node_modules
 ```
 
-Применить миграции (первый раз и после каждого обновления схемы):
+Применить миграции и seed (первый раз или после `down -v`):
 
 ```bash
-docker compose exec web npx prisma migrate deploy
+docker compose --profile tools run --rm migrate
+docker compose --profile tools run --rm seed
+docker compose up -d web
 ```
 
-Seed (первый раз — админ, демо-контент):
-
-```bash
-docker compose exec web npx prisma db seed
-```
+Сервисы `migrate` и `seed` используют builder-образ с полным `node_modules` (Prisma **6.x**). **Не используйте `docker compose exec web npx prisma`** — в production-контейнере `npx` скачает Prisma 7.
 
 Проверка:
 
@@ -355,7 +367,7 @@ docker compose up -d --no-build
 ```bash
 cd ~/catshredias-blog
 docker compose up -d --no-build web
-docker compose exec web npx prisma migrate deploy
+docker compose --profile tools run --rm migrate
 ```
 
 ---
@@ -373,7 +385,7 @@ sudo apt install -y nginx certbot python3-certbot-nginx
 
 Сначала поднимите HTTP без SSL, чтобы Certbot мог пройти проверку.
 
-**`/etc/nginx/sites-available/catshredia.ru`:**
+`**/etc/nginx/sites-available/catshredia.ru`:**
 
 ```nginx
 server {
@@ -391,7 +403,7 @@ server {
 }
 ```
 
-**`/etc/nginx/sites-available/runews.catshredia.ru`:**
+`**/etc/nginx/sites-available/runews.catshredia.ru`:**
 
 ```nginx
 server {
@@ -422,8 +434,8 @@ server {
 Включить сайты:
 
 ```bash
-sudo ln -sf /etc/nginx/sites-available/catshredia.ru /etc/nginx/sites-enabled/
 sudo ln -sf /etc/nginx/sites-available/runews.catshredia.ru /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/catshredia.ru /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -470,13 +482,15 @@ location /_next/static/ {
 
 В админке портфолио (`/admin/projects`) создайте проект **Runews**:
 
-| Поле | Пример |
-|------|--------|
-| Название | Runews |
-| Live URL | `https://runews.catshredia.ru` |
-| Репозиторий | ссылка на GitHub |
-| Стек | Blazor WASM, ASP.NET Core 8, PostgreSQL, Docker, SignalR |
-| Описание | новостной агрегатор с модерацией, RSS, комментариями |
+
+| Поле        | Пример                                                   |
+| ----------- | -------------------------------------------------------- |
+| Название    | Runews                                                   |
+| Live URL    | `https://runews.catshredia.ru`                           |
+| Репозиторий | ссылка на GitHub                                         |
+| Стек        | Blazor WASM, ASP.NET Core 8, PostgreSQL, Docker, SignalR |
+| Описание    | новостной агрегатор с модерацией, RSS, комментариями     |
+
 
 Опционально в Runews на странице «О сервисе» добавьте ссылку на `https://catshredia.ru`.
 
@@ -536,7 +550,7 @@ docker exec runews-db pg_dump -U postgres news_db | gzip > ~/backups/runews/news
 cd ~/apps/catshredias-blog
 git pull
 docker compose up -d --build
-docker compose exec web npx prisma migrate deploy
+docker compose --profile tools run --rm migrate
 ```
 
 ### Runews
@@ -577,29 +591,31 @@ docker stats --no-stream
 
 ## 13. Чеклист приёмки
 
-- [ ] `https://catshredia.ru` открывается, валидный TLS
-- [ ] `https://catshredia.ru/admin/login` — вход администратора
-- [ ] `https://runews.catshredia.ru` — лента Runews
-- [ ] API Runews: `curl -s https://runews.catshredia.ru/api/tags`
-- [ ] SignalR: комментарии на статье обновляются в реальном времени
-- [ ] Письма Runews (регистрация/сброс пароля) ведут на `runews.catshredia.ru`
-- [ ] В карточке проекта Runews на портфолио — рабочая ссылка live
-- [ ] Снаружи закрыты порты 3000, 8080, 55432, 55433
-- [ ] `.env` с правами `600`, секреты не в git
-- [ ] Настроены бэкапы обеих БД и загрузок
+- `https://catshredia.ru` открывается, валидный TLS
+- `https://catshredia.ru/admin/login` — вход администратора
+- `https://runews.catshredia.ru` — лента Runews
+- API Runews: `curl -s https://runews.catshredia.ru/api/tags`
+- SignalR: комментарии на статье обновляются в реальном времени
+- Письма Runews (регистрация/сброс пароля) ведут на `runews.catshredia.ru`
+- В карточке проекта Runews на портфолио — рабочая ссылка live
+- Снаружи закрыты порты 3000, 8080, 55432, 55433
+- `.env` с правами `600`, секреты не в git
+- Настроены бэкапы обеих БД и загрузок
 
 ---
 
 ## 14. Типичные проблемы
 
-| Симптом | Причина | Решение |
-|---------|---------|---------|
-| `502 Bad Gateway` на домене | Контейнер не запущен или неверный порт | `docker compose ps`, проверить `127.0.0.1:3000` / `:8080` |
-| Nginx не стартует | Runews занял `:80` | Изменить Runews на `127.0.0.1:8080:80` |
-| Ссылки в email ведут на localhost | Неверный `PUBLIC_URL` | `.env` → `https://runews.catshredia.ru`, `docker compose up -d api web` |
-| Auth.js / OAuth ошибки | `AUTH_URL` не совпадает с браузером | `AUTH_URL=https://catshredia.ru` |
-| WebSocket комментариев Runews обрывается | Нет Upgrade в Nginx | Блок `location /hubs/` (см. §7.1) |
-| Prisma ошибка при старте blog | Нет миграций | `docker compose exec web npx prisma migrate deploy` |
+
+| Симптом                                  | Причина                                | Решение                                                                 |
+| ---------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------- |
+| `502 Bad Gateway` на домене              | Контейнер не запущен или неверный порт | `docker compose ps`, проверить `127.0.0.1:3000` / `:8080`               |
+| Nginx не стартует                        | Runews занял `:80`                     | Изменить Runews на `127.0.0.1:8080:80`                                  |
+| Ссылки в email ведут на localhost        | Неверный `PUBLIC_URL`                  | `.env` → `https://runews.catshredia.ru`, `docker compose up -d api web` |
+| Auth.js / OAuth ошибки                   | `AUTH_URL` не совпадает с браузером    | `AUTH_URL=https://catshredia.ru`                                        |
+| WebSocket комментариев Runews обрывается | Нет Upgrade в Nginx                    | Блок `location /hubs/` (см. §7.1)                                       |
+| Prisma ошибка при старте blog            | Нет миграций                           | `docker compose --profile tools run --rm migrate`                     |
+
 
 ---
 
@@ -608,3 +624,4 @@ docker stats --no-stream
 - [README.md](../README.md) — локальная разработка catshredias-blog
 - [Coursework/README.md](../../Coursework/README.md) — Runews, переменные `.env`
 - [Coursework/docs/server-setup.md](../../Coursework/docs/server-setup.md) — VPS Timeweb, Docker, firewall
+

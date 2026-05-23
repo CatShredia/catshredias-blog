@@ -15,6 +15,7 @@ export const metadata: Metadata = {
 };
 
 export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function BlogPage() {
   const [categories, tags, initial] = await Promise.all([

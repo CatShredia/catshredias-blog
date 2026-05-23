@@ -40,6 +40,38 @@ services:
     volumes:
       - uploads:/app/uploads
 
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-portfolio_db}
+    command: npx prisma migrate deploy
+    profiles:
+      - tools
+
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-portfolio_db}
+    command: npx prisma db seed
+    profiles:
+      - tools
+
 volumes:
   portfolio_pg_data:
   uploads:

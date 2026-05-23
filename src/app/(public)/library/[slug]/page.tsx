@@ -8,18 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
-import { getBookBySlug, getBookSlugs } from "@/lib/queries/books";
+import { getBookBySlug } from "@/lib/queries/books";
 import { siteUrl } from "@/lib/seo";
 import { BOOK_STATUS_LABELS } from "@/lib/validations/book";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
 export const revalidate = 60;
-
-export async function generateStaticParams() {
-  const books = await getBookSlugs();
-  return books.map((book) => ({ slug: book.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;

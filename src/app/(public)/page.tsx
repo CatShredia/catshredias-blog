@@ -6,6 +6,7 @@ import { siteProfile } from "@/data/mock/site";
 import { getSiteSettings } from "@/lib/queries/site-settings";
 
 export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const settings = await getSiteSettings();

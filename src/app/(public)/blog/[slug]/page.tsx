@@ -10,7 +10,6 @@ import { Container } from "@/components/ui/container";
 import { listApprovedComments } from "@/lib/queries/comments";
 import {
   getPublishedPostBySlug,
-  getPublishedPostSlugs,
 } from "@/lib/queries/posts";
 import { articleJsonLd, siteUrl } from "@/lib/seo";
 
@@ -19,11 +18,7 @@ type PageProps = {
 };
 
 export const revalidate = 60;
-
-export async function generateStaticParams() {
-  const posts = await getPublishedPostSlugs();
-  return posts.map((post) => ({ slug: post.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
