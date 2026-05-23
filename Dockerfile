@@ -3,8 +3,9 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 FROM base AS deps
+ARG NPM_REGISTRY=https://registry.npmjs.org
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm config set registry "${NPM_REGISTRY}" && npm ci
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules

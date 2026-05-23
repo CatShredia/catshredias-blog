@@ -1,47 +1,106 @@
 # catshredias-blog
 
-Персональный сайт-визитка с блогом, портфолио и админкой (Next.js 16, Prisma, PostgreSQL, Auth.js).
+Персональный сайт-визитка с блогом, портфолио, библиотекой книг и админ-панелью. Проект [catshredia.ru](https://catshredia.ru) разворачивается на VPS рядом с [Runews](../Coursework) на отдельном поддомене.
+
+## Возможности
+
+### Публичная часть
+
+| Раздел | Описание |
+|--------|----------|
+| **Главная** | Hero, биография, статус «Ищу работу» (Да/Нет) |
+| **Блог** | Лента с infinite scroll, поиск, фильтры по категориям и тегам, Markdown |
+| **Портфолио** | Проекты, фильтры по стеку и роли, PDF-резюме, ссылка на hh.ru, статус поиска работы |
+| **Библиотека** | Книги: статус (в планах / читаю / прочитано), рейтинг, теги, отзыв-пост |
+| **Контакты** | Форма обратной связи (сервер + rate limit), ссылки на соцсети |
+| **Профиль** | Регистрация, аватар, отображаемое имя; для админа — ссылка в админку |
+
+### Пользователи и комментарии
+
+- Регистрация и вход (`/register`, `/login`)
+- Комментарии к постам только для авторизованных; публикуются сразу
+- Cloudflare Turnstile (опционально в dev)
+- Жалобы на комментарии; админ видит новые комментарии и обрабатывает жалобы
+
+### Админ-панель (`/admin`)
+
+- Посты: CRUD, черновик / опубликовано / запланировано, обложка, Markdown-редактор с автосохранением и загрузкой файлов
+- Проекты: кейсы «Проблема → Решение → Результат», скриншоты, PDF, hh.ru
+- **Портфолио (настройки сайта):** hh.ru, PDF-резюме, «Ищу работу»
+- Библиотека книг
+- Комментарии и жалобы
+- Правила Markdown (только в админке)
+
+### Прочее
+
+- Светлая / тёмная / системная тема
+- SEO: `sitemap.xml`, `robots.txt`, Open Graph, JSON-LD
+- CI (lint, test, build), health check, скрипты бэкапа БД
+- Загрузки: изображения и PDF в `uploads/`, раздача через `/api/uploads/...`
 
 ## Стек
 
-- **Frontend:** Next.js App Router, TypeScript, Tailwind CSS v4
-- **Backend:** Route Handlers, Server Actions, Auth.js v5
-- **БД:** PostgreSQL 16, Prisma ORM
-- **Деплой:** Docker `standalone` на VPS (рядом с [Runews](../Coursework))
+- **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4
+- **Backend:** Route Handlers, Server Actions, Auth.js v5 (JWT)
+- **БД:** PostgreSQL 16, Prisma 6
+- **Деплой:** Docker `standalone`, Nginx на VPS
 
-## Быстрый старт (локально)
+## Быстрый старт
 
-1. Скопируйте переменные:
+### Требования
+
+- Node.js 22+
+- Docker (для PostgreSQL локально)
+
+### 1. Переменные окружения
 
 ```bash
 cp .env.example .env
 ```
 
-2. Поднимите PostgreSQL:
+Минимум для локальной разработки:
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:55433/portfolio_db"
+AUTH_SECRET="ваш-секрет-минимум-32-символа"
+AUTH_URL="http://localhost:3000"
+NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+ADMIN_EMAIL="admin@catshredia.ru"
+ADMIN_PASSWORD="changeme"
+```
+
+Сгенерировать `AUTH_SECRET`:
+
+```bash
+openssl rand -base64 32
+```
+
+### 2. База данных
 
 ```bash
 docker compose up -d db
-```
-
-Порт **55433** (не конфликтует с Runews на 55432).
-
-3. Миграции и seed (админ + посты + проекты):
-
-```bash
+npm install
 npm run db:migrate
 npm run db:seed
 ```
 
-4. Dev-сервер:
+PostgreSQL слушает порт **55433** (не пересекается с Runews на 55432).
+
+### 3. Запуск
 
 ```bash
 npm run dev
 ```
 
-- Сайт: http://localhost:3000  
-- Админка: http://localhost:3000/admin  
-- Модерация комментариев: http://localhost:3000/admin/comments  
-- Логин после seed: `admin@catshredia.ru` / `changeme`
+| URL | Назначение |
+|-----|------------|
+| http://localhost:3000 | Сайт |
+| http://localhost:3000/admin | Админка |
+| http://localhost:3000/admin/login | Вход администратора |
+
+После seed: **admin@catshredia.ru** / **changeme**
+
+Обычные пользователи регистрируются на `/register`. Админка доступна только с ролью `ADMIN`; ссылка «Админка» — в профиле (`/profile`).
 
 ## Docker (web + db)
 
@@ -49,48 +108,100 @@ npm run dev
 docker compose up -d --build
 ```
 
-Перед первым запуском задайте `AUTH_SECRET` (≥32 символов) в `.env`.
+Перед первым запуском задайте в `.env` валидный `AUTH_SECRET` (≥ 32 символов).
 
-## Скрипты
+## Переменные окружения
+
+| Переменная | Обязательно | Описание |
+|------------|-------------|----------|
+| `DATABASE_URL` | да | PostgreSQL connection string |
+| `AUTH_SECRET` | да | Секрет Auth.js |
+| `AUTH_URL` | да | Базовый URL приложения |
+| `NEXT_PUBLIC_SITE_URL` | да | Публичный URL (SEO, ссылки) |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | для seed | Учётка администратора |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | нет | OAuth GitHub |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | нет | OAuth Google |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | нет | Turnstile для комментариев |
+| `CRON_SECRET` | нет | Защита `POST /api/cron/publish-scheduled` |
+| `NPM_REGISTRY` | нет | npm registry для `docker compose build` на VPS (например GitVerse mirror) |
+| `UPLOAD_DIR` | нет | Каталог загрузок (по умолчанию `./uploads`) |
+
+## Скрипты npm
 
 | Команда | Описание |
 |---------|----------|
-| `npm run dev` | Разработка |
+| `npm run dev` | Dev-сервер |
 | `npm run build` | Prisma generate + production build |
-| `npm run test` | Unit-тесты (Vitest) |
+| `npm run start` | Production-сервер |
 | `npm run lint` | ESLint |
-| `npm run db:migrate` | Миграции |
-| `npm run db:seed` | Админ, посты, проекты |
+| `npm run test` | Vitest (unit) |
+| `npm run db:migrate` | Миграции (`prisma migrate dev`) |
+| `npm run db:seed` | Seed: админ, посты, проекты, настройки сайта |
 | `npm run db:studio` | Prisma Studio |
+
+## Маршруты
+
+### Публичные
+
+- `/` — главная
+- `/blog`, `/blog/[slug]` — блог
+- `/portfolio`, `/portfolio/[slug]` — портфолио
+- `/library`, `/library/[slug]` — библиотека
+- `/contacts` — контакты
+- `/login`, `/register`, `/profile`
+
+### Админка
+
+- `/admin` — дашборд
+- `/admin/posts`, `/admin/projects`, `/admin/books`
+- `/admin/portfolio-settings` — hh.ru, PDF, «Ищу работу»
+- `/admin/comments`, `/admin/reports`
+- `/admin/formatting` — справка по Markdown
 
 ## API
 
 | Метод | URL | Описание |
 |-------|-----|----------|
-| GET | `/api/posts?cursor=&q=&category=&limit=` | Лента постов (cursor) |
-| GET | `/api/projects?tech=&role=` | Портфолио |
-| POST | `/api/comments` | Новый комментарий (Turnstile) |
-| POST | `/api/contacts` | Форма обратной связи (rate limit) |
+| GET | `/api/posts?cursor=&q=&category=&tag=&limit=` | Лента постов (cursor pagination) |
+| GET | `/api/projects?tech=&role=` | Список проектов |
+| POST | `/api/comments` | Новый комментарий (auth + Turnstile) |
+| POST | `/api/comments/[id]/report` | Жалоба на комментарий |
+| POST | `/api/contacts` | Форма обратной связи |
+| POST | `/api/user/avatar` | Аватар пользователя |
+| PATCH | `/api/user/profile` | Имя в профиле |
+| POST | `/api/admin/upload` | Загрузка файлов (admin) |
+| GET | `/api/uploads/[...path]` | Раздача загруженных файлов |
 | POST | `/api/cron/publish-scheduled` | Публикация отложенных постов |
-| GET | `/api/health` | Health + БД |
+| GET | `/api/health` | Health check + проверка БД |
 
-## SEO
+## Структура проекта
 
-- `/sitemap.xml`, `/robots.txt`
-- Open Graph и JSON-LD (Article, Person, WebSite)
-- `revalidate = 60` на страницах блога и портфолио
+```text
+catshredias-blog/
+├── prisma/              # Схема, миграции, seed
+├── src/
+│   ├── app/
+│   │   ├── (public)/    # Публичные страницы
+│   │   ├── (admin)/     # Админка
+│   │   └── api/         # Route Handlers
+│   ├── components/      # UI, блог, портфолио, админка
+│   └── lib/             # Auth, Prisma, queries, validations
+├── uploads/             # Загруженные файлы (не в git)
+├── docs/deploy-vps.md   # Деплой на VPS
+└── _docs/               # Техническое задание
+```
 
 ## Бэкап БД
 
 ```bash
-# Linux/macOS
+# Linux / macOS
 ./scripts/backup-db.sh
 
 # Windows
 ./scripts/backup-db.ps1
 ```
 
-## DataGrip
+## Подключение к БД (DataGrip / DBeaver)
 
 | Поле | Значение |
 |------|----------|
@@ -99,18 +210,30 @@ docker compose up -d --build
 | Database | `portfolio_db` |
 | User / Password | `postgres` / `postgres` |
 
-## Документация
+## Деплой
 
-- [deploy-vps.md](docs/deploy-vps.md) — Nginx, поддомены, Runews + портфолио
-- ТЗ: `_docs/Техническое задание 23.05.docx`
+Полная инструкция по размещению **catshredia.ru** и **runews.catshredia.ru** на одном VPS:
 
-## Этапы по ТЗ
+- **[docs/deploy-vps.md](docs/deploy-vps.md)** — DNS, Docker, Nginx, SSL, `.env`, миграции, cron, бэкапы, чеклист
+- **[docs/nginx/](docs/nginx/)** — примеры конфигов Nginx для обоих доменов
+
+Runews на том же сервере: [Coursework/docs/server-setup.md](../Coursework/docs/server-setup.md).
+
+## Документация и ТЗ
+
+- ТЗ: `_docs/Техническое задание 23.05.docx` (текст: `_docs/_tz_extracted.txt`)
+
+## Статус по этапам ТЗ
 
 - [x] **1** — каркас, Prisma, Auth.js, Docker
-- [x] **2** — публичный UI, темы, mock-данные
-- [x] **3** — CRUD админки, редактор Markdown
-- [x] **4** — блог: API, infinite scroll, SEO
-- [x] **5** — портфолио из БД, PDF viewer, hh.ru
-- [x] **6** — комментарии, Turnstile, модерация
+- [x] **2** — публичный UI, темы
+- [x] **3** — CRUD админки, Markdown-редактор
+- [x] **4** — блог: API, infinite scroll, SEO, фильтры
+- [x] **5** — портфолио: кейсы, PDF, hh.ru
+- [x] **6** — комментарии, Turnstile, модерация, жалобы
 - [x] **7** — CI, тесты, логи, бэкапы, health
-- [ ] **8** — деплой на прод, финальная документация
+- [ ] **8** — продакшен-деплой и финальная передача ([docs/deploy-vps.md](docs/deploy-vps.md))
+
+## Лицензия
+
+Приватный проект. Все права у владельца репозитория.
