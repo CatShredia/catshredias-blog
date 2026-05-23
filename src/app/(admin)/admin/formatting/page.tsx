@@ -45,15 +45,15 @@ const answer = 42;
 ![alt](https://placehold.co/600x300)
 `;
 
-export default function FormattingPage() {
+export default function AdminFormattingPage() {
   return (
-    <Container className="py-10 sm:py-14">
-      <Link href="/blog" className="text-sm text-muted hover:text-foreground">
-        ← К блогу
+    <Container className="py-10">
+      <Link href="/admin/posts" className="text-sm text-muted hover:text-foreground">
+        ← К постам
       </Link>
-      <h1 className="mt-4 text-3xl font-bold">Правила форматирования</h1>
+      <h1 className="mt-4 text-2xl font-bold">Правила форматирования Markdown</h1>
       <p className="mt-2 max-w-2xl text-muted">
-        Примеры синтаксиса для авторов в админке (этап 3).
+        Справка для авторов в админке при создании постов и проектов.
       </p>
       <div className="mt-8 max-w-3xl">
         <MarkdownContent content={rulesContent} />

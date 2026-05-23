@@ -4,16 +4,19 @@ import { auth, signOut } from "@/lib/auth";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { listAdminPosts, listAdminProjects } from "@/lib/queries/admin";
+import { countPendingReports, countUnseenComments } from "@/lib/queries/comments";
 import { prisma } from "@/lib/prisma";
-import { CommentStatus } from "@prisma/client";
 
 export default async function AdminDashboardPage() {
   const session = await auth();
-  const [postsCount, projectsCount, pendingComments] = await Promise.all([
-    prisma.post.count(),
-    listAdminProjects().then((items) => items.length),
-    prisma.comment.count({ where: { status: CommentStatus.PENDING } }),
-  ]);
+  const [postsCount, projectsCount, booksCount, unseenComments, pendingReports] =
+    await Promise.all([
+      prisma.post.count(),
+      listAdminProjects().then((items) => items.length),
+      prisma.book.count(),
+      countUnseenComments(),
+      countPendingReports(),
+    ]);
 
   const recentPosts = await listAdminPosts();
 
@@ -24,13 +27,20 @@ export default async function AdminDashboardPage() {
         Вы вошли как {session?.user?.email ?? "администратор"}.
       </p>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Link
           href="/admin/posts"
           className="rounded-xl border border-border bg-card p-5 hover:border-accent/40"
         >
           <p className="text-2xl font-bold">{postsCount}</p>
           <p className="text-sm text-muted">Постов</p>
+        </Link>
+        <Link
+          href="/admin/books"
+          className="rounded-xl border border-border bg-card p-5 hover:border-accent/40"
+        >
+          <p className="text-2xl font-bold">{booksCount}</p>
+          <p className="text-sm text-muted">Книг</p>
         </Link>
         <Link
           href="/admin/projects"
@@ -43,8 +53,15 @@ export default async function AdminDashboardPage() {
           href="/admin/comments"
           className="rounded-xl border border-border bg-card p-5 hover:border-accent/40"
         >
-          <p className="text-2xl font-bold">{pendingComments}</p>
-          <p className="text-sm text-muted">Комментариев на модерации</p>
+          <p className="text-2xl font-bold">{unseenComments}</p>
+          <p className="text-sm text-muted">Новых комментариев</p>
+        </Link>
+        <Link
+          href="/admin/reports"
+          className="rounded-xl border border-border bg-card p-5 hover:border-accent/40"
+        >
+          <p className="text-2xl font-bold">{pendingReports}</p>
+          <p className="text-sm text-muted">Жалоб</p>
         </Link>
       </div>
 

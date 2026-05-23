@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { MarkdownEditor } from "@/components/admin/markdown-editor";
 import { Button } from "@/components/ui/button";
+import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { slugify } from "@/lib/slug";
 
 type PostFormProps = {
@@ -15,6 +16,7 @@ type PostFormProps = {
     title: string;
     slug: string;
     excerpt: string | null;
+    coverImage: string | null;
     content: string;
     status: PostStatus;
     publishedAt: Date | null;
@@ -27,6 +29,7 @@ export function PostForm({ mode, post, saveAction }: PostFormProps) {
   const [title, setTitle] = useState(post?.title ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(mode === "edit");
+  const [coverImage, setCoverImage] = useState(post?.coverImage ?? "");
 
   const draftKey = post ? `draft-post-${post.id}` : "draft-post-new";
 
@@ -75,6 +78,13 @@ export function PostForm({ mode, post, saveAction }: PostFormProps) {
           className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
         />
       </div>
+
+      <ImageUploadField
+        name="coverImage"
+        label="Обложка поста"
+        value={coverImage}
+        onChange={setCoverImage}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

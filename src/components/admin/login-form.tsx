@@ -1,12 +1,13 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { getSession, signIn, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { isAdminRole } from "@/lib/auth-helpers";
 
-export function LoginForm() {
+export function AdminLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/admin";
@@ -26,13 +27,21 @@ export function LoginForm() {
       redirect: false,
     });
 
-    setLoading(false);
-
     if (result?.error) {
+      setLoading(false);
       setError("Неверный email или пароль");
       return;
     }
 
+    const session = await getSession();
+    if (!isAdminRole(session?.user?.role)) {
+      await signOut({ redirect: false });
+      setLoading(false);
+      setError("Доступ только для администраторов");
+      return;
+    }
+
+    setLoading(false);
     router.push(callbackUrl);
     router.refresh();
   }

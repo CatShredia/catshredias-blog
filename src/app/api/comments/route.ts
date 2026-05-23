@@ -1,37 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 
+import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { createComment } from "@/lib/queries/comments";
 import { rateLimit } from "@/lib/rate-limit";
 import { verifyTurnstile } from "@/lib/turnstile";
-
-const commentSchema = z.object({
-  postId: z.string().min(1),
-  authorName: z.string().min(2).max(80),
-  authorEmail: z.string().email(),
-  content: z.string().min(3).max(5000),
-  parentId: z.string().optional(),
-  turnstileToken: z.string().optional(),
-});
+import { commentSchema } from "@/lib/validations/comment";
 
 export async function POST(request: NextRequest) {
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip") ??
-    "unknown";
+  const session = await auth();
+  if (!session?.user?.id || !session.user.email) {
+    return NextResponse.json(
+      { error: "Войдите или зарегистрируйтесь, чтобы оставить комментарий" },
+      { status: 401 },
+    );
+  }
 
-  const limited = rateLimit(`comments:${ip}`, 5, 60_000);
+  const limited = rateLimit(`comments:${session.user.id}`, 10, 60_000);
   if (!limited.ok) {
     return NextResponse.json(
       { error: "Слишком много запросов. Попробуйте позже." },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(Math.ceil((limited.retryAfterMs ?? 60_000) / 1000)),
-        },
-      },
+      { status: 429 },
     );
   }
 
@@ -53,29 +43,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Пост не найден" }, { status: 404 });
     }
 
+    const authorName =
+      session.user.name?.trim() || session.user.email.split("@")[0];
+    const authorEmail = session.user.email;
+
     const comment = await createComment({
       postId: body.postId,
-      authorName: body.authorName,
-      authorEmail: body.authorEmail,
+      userId: session.user.id,
+      authorName,
+      authorEmail,
       content: body.content,
       parentId: body.parentId,
     });
 
-    logger.info("Comment created", { commentId: comment.id, postId: post.id });
+    logger.info("Comment created", {
+      commentId: comment.id,
+      postId: post.id,
+      userId: session.user.id,
+    });
 
     return NextResponse.json(
       {
-        id: comment.id,
-        message: "Комментарий отправлен на модерацию",
+        comment: {
+          id: comment.id,
+          authorName: comment.user?.name ?? comment.authorName,
+          authorImage: comment.user?.image,
+          content: comment.content,
+          createdAt: comment.createdAt.toISOString(),
+          replies: [],
+        },
+        message: "Комментарий опубликован",
       },
       { status: 201 },
     );
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Некорректные данные", details: error.flatten() },
-        { status: 400 },
-      );
+    if (error instanceof Error && error.message.includes("жалобу")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
     logger.error("POST /api/comments failed", {
       error: error instanceof Error ? error.message : "unknown",

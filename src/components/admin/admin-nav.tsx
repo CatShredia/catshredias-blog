@@ -3,8 +3,11 @@ import Link from "next/link";
 const links = [
   { href: "/admin", label: "Главная" },
   { href: "/admin/posts", label: "Посты" },
+  { href: "/admin/formatting", label: "Markdown" },
+  { href: "/admin/books", label: "Библиотека" },
   { href: "/admin/projects", label: "Проекты" },
   { href: "/admin/comments", label: "Комментарии" },
+  { href: "/admin/reports", label: "Жалобы" },
 ];
 
 export function AdminNav() {

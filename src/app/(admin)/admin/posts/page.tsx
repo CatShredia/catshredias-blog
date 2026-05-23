@@ -18,7 +18,12 @@ export default async function AdminPostsPage() {
     <Container className="py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Посты</h1>
-        <ButtonLink href="/admin/posts/new">Новый пост</ButtonLink>
+        <div className="flex flex-wrap gap-2">
+          <ButtonLink href="/admin/posts/new">Новый пост</ButtonLink>
+          <ButtonLink href="/admin/formatting" variant="secondary">
+            Правила Markdown
+          </ButtonLink>
+        </div>
       </div>
 
       <div className="mt-8 overflow-x-auto rounded-xl border border-border">

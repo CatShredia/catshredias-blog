@@ -1,57 +1,71 @@
 "use server";
 
-import { CommentStatus } from "@prisma/client";
+import { ReportStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
-import { auth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin-auth";
 import {
   deleteComment,
-  updateCommentStatus,
+  hideComment,
+  markAllCommentsSeen,
+  markCommentSeen,
+  updateReportStatus,
 } from "@/lib/queries/comments";
 
-async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user) {
-    throw new Error("Unauthorized");
-  }
+export async function markAllSeenAction() {
+  await requireAdmin();
+  await markAllCommentsSeen();
+  revalidatePath("/admin/comments");
+  revalidatePath("/admin");
 }
 
-export async function approveComment(id: string) {
+export async function markSeenAction(formData: FormData) {
   await requireAdmin();
-  await updateCommentStatus(id, CommentStatus.APPROVED);
+  const id = formData.get("id");
+  if (typeof id !== "string") return;
+  await markCommentSeen(id);
+  revalidatePath("/admin/comments");
+  revalidatePath("/admin");
+}
+
+export async function hideCommentAction(formData: FormData) {
+  await requireAdmin();
+  const id = formData.get("id");
+  if (typeof id !== "string") return;
+  await hideComment(id);
   revalidatePath("/admin/comments");
   revalidatePath("/blog", "layout");
 }
 
-export async function rejectComment(id: string) {
+export async function deleteCommentAction(formData: FormData) {
   await requireAdmin();
-  await updateCommentStatus(id, CommentStatus.REJECTED);
-  revalidatePath("/admin/comments");
-}
-
-export async function removeComment(id: string) {
-  await requireAdmin();
+  const id = formData.get("id");
+  if (typeof id !== "string") return;
   await deleteComment(id);
   revalidatePath("/admin/comments");
   revalidatePath("/blog", "layout");
 }
 
-function getCommentId(formData: FormData) {
+export async function resolveReportAction(formData: FormData) {
+  await requireAdmin();
   const id = formData.get("id");
-  if (typeof id !== "string" || !id) {
-    throw new Error("Missing comment id");
+  const status = formData.get("status");
+  const note = formData.get("note");
+  const commentId = formData.get("commentId");
+  const hide = formData.get("hide") === "1";
+  if (typeof id !== "string" || typeof status !== "string") return;
+
+  if (hide && typeof commentId === "string") {
+    await hideComment(commentId);
   }
-  return id;
-}
 
-export async function approveCommentForm(formData: FormData) {
-  await approveComment(getCommentId(formData));
-}
-
-export async function rejectCommentForm(formData: FormData) {
-  await rejectComment(getCommentId(formData));
-}
-
-export async function removeCommentForm(formData: FormData) {
-  await removeComment(getCommentId(formData));
+  await updateReportStatus(
+    id,
+    status as ReportStatus,
+    typeof note === "string" ? note : undefined,
+  );
+  revalidatePath("/admin/reports");
+  revalidatePath("/admin/comments");
+  revalidatePath("/admin");
+  revalidatePath("/blog", "layout");
 }

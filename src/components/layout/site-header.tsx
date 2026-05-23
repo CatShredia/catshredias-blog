@@ -1,11 +1,13 @@
 import Link from "next/link";
 
+import { AuthNav } from "@/components/layout/auth-nav";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Container } from "@/components/ui/container";
 
 const nav = [
   { href: "/", label: "Главная" },
   { href: "/blog", label: "Блог" },
+  { href: "/library", label: "Библиотека" },
   { href: "/portfolio", label: "Портфолио" },
   { href: "/contacts", label: "Контакты" },
 ];
@@ -33,12 +35,7 @@ export function SiteHeader() {
         </nav>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            href="/admin"
-            className="hidden rounded-lg border border-border px-3 py-2 text-sm sm:inline-flex min-h-11 items-center"
-          >
-            Админка
-          </Link>
+          <AuthNav />
         </div>
       </Container>
       <Container className="pb-3 sm:hidden">

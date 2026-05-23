@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -6,6 +7,7 @@ import { CommentSection } from "@/components/blog/comment-section";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
+import { listApprovedComments } from "@/lib/queries/comments";
 import {
   getPublishedPostBySlug,
   getPublishedPostSlugs,
@@ -40,6 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: "article",
       publishedTime: post.publishedAt?.toISOString(),
       url,
+      images: post.coverImage ? [post.coverImage] : undefined,
     },
     alternates: { canonical: url },
   };
@@ -50,6 +53,7 @@ export default async function BlogPostPage({ params }: PageProps) {
   const post = await getPublishedPostBySlug(slug);
   if (!post) notFound();
 
+  const comments = await listApprovedComments(post.id);
   const jsonLd = articleJsonLd(post);
 
   return (
@@ -62,6 +66,18 @@ export default async function BlogPostPage({ params }: PageProps) {
         ← К блогу
       </Link>
       <article className="mt-6 max-w-3xl">
+        {post.coverImage ? (
+          <div className="relative mb-6 aspect-[2/1] overflow-hidden rounded-xl border border-border">
+            <Image
+              src={post.coverImage}
+              alt=""
+              fill
+              className="object-cover"
+              priority
+              unoptimized
+            />
+          </div>
+        ) : null}
         <time
           dateTime={post.publishedAt?.toISOString()}
           className="text-sm text-muted"
@@ -85,16 +101,20 @@ export default async function BlogPostPage({ params }: PageProps) {
 
       <CommentSection
         postId={post.id}
-        comments={post.comments.map((comment) => ({
+        postSlug={post.slug}
+        initialComments={comments.map((comment) => ({
           id: comment.id,
-          authorName: comment.authorName,
+          authorName: comment.user?.name ?? comment.authorName,
+          authorImage: comment.user?.image,
           content: comment.content,
           createdAt: comment.createdAt,
           replies: comment.replies.map((reply) => ({
             id: reply.id,
-            authorName: reply.authorName,
+            authorName: reply.user?.name ?? reply.authorName,
+            authorImage: reply.user?.image,
             content: reply.content,
             createdAt: reply.createdAt,
+            replies: [],
           })),
         }))}
       />

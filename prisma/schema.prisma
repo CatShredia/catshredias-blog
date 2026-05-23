@@ -9,6 +9,7 @@ datasource db {
 
 enum Role {
   ADMIN
+  USER
 }
 
 enum PostStatus {
@@ -23,17 +24,31 @@ enum CommentStatus {
   REJECTED
 }
 
+enum BookStatus {
+  PLANNED
+  READING
+  READ
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
-  passwordHash  String
+  passwordHash  String?
   name          String?
-  role          Role      @default(ADMIN)
+  role          Role      @default(USER)
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
   posts         Post[]
+  comments      Comment[]
+  reports       Report[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -78,10 +93,13 @@ model Post {
   slug        String     @unique
   content     String     @db.Text
   excerpt     String?
+  coverImage  String?
   status      PostStatus @default(DRAFT)
   publishedAt DateTime?
   authorId    String
   author      User       @relation(fields: [authorId], references: [id])
+  bookId      String?    @unique
+  book        Book?      @relation(fields: [bookId], references: [id], onDelete: SetNull)
   categories  Category[]
   tags        Tag[]
   comments    Comment[]
@@ -108,18 +126,57 @@ model Project {
   updatedAt   DateTime @updatedAt
 }
 
+model Book {
+  id          String     @id @default(cuid())
+  title       String
+  slug        String     @unique
+  author      String?
+  description String?    @db.Text
+  coverImage  String?
+  status      BookStatus @default(PLANNED)
+  rating      Int?
+  tags        BookTag[]
+  reviewPost  Post?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model BookTag {
+  id    String @id @default(cuid())
+  name  String @unique
+  slug  String @unique
+  books Book[]
+}
+
 model Comment {
-  id          String        @id @default(cuid())
-  postId      String
-  post        Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
-  parentId    String?
-  parent      Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies     Comment[]     @relation("CommentReplies")
-  content     String        @db.Text
-  authorName  String
-  authorEmail String
-  status      CommentStatus @default(PENDING)
-  createdAt   DateTime      @default(now())
+  id           String        @id @default(cuid())
+  postId       String
+  post         Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  parentId     String?
+  parent       Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      Comment[]     @relation("CommentReplies")
+  content      String        @db.Text
+  authorName   String
+  authorEmail  String
+  status       CommentStatus @default(APPROVED)
+  adminSeenAt  DateTime?
+  reports      Report[]
+  createdAt    DateTime      @default(now())
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  commentId  String
+  comment    Comment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reporterId String?
+  reporter   User?        @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+  reason     String       @db.Text
+  status     ReportStatus @default(PENDING)
+  adminNote  String?      @db.Text
+  createdAt  DateTime     @default(now())
+  reviewedAt DateTime?
 }
 
 model Category {

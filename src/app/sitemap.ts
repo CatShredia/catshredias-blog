@@ -1,21 +1,23 @@
 import type { MetadataRoute } from "next";
 
+import { getBookSlugs } from "@/lib/queries/books";
 import { getPublishedPostSlugs } from "@/lib/queries/posts";
 import { getProjectSlugs } from "@/lib/queries/projects";
 import { siteUrl } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [posts, projects] = await Promise.all([
+  const [posts, projects, books] = await Promise.all([
     getPublishedPostSlugs(),
     getProjectSlugs(),
+    getBookSlugs(),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     "",
     "/blog",
-    "/blog/formatting",
     "/portfolio",
     "/contacts",
+    "/library",
   ].map((path) => ({
     url: `${siteUrl}${path}`,
     lastModified: new Date(),
@@ -37,5 +39,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...postRoutes, ...projectRoutes];
+  const bookRoutes: MetadataRoute.Sitemap = books.map((book) => ({
+    url: `${siteUrl}/library/${book.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticRoutes, ...postRoutes, ...projectRoutes, ...bookRoutes];
 }

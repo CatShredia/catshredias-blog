@@ -124,16 +124,6 @@ export async function getPublishedPostBySlug(slug: string) {
       author: { select: { name: true, email: true } },
       categories: true,
       tags: true,
-      comments: {
-        where: { status: "APPROVED", parentId: null },
-        orderBy: { createdAt: "asc" },
-        include: {
-          replies: {
-            where: { status: "APPROVED" },
-            orderBy: { createdAt: "asc" },
-          },
-        },
-      },
     },
   });
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { AuthSessionProvider } from "@/components/providers/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { personJsonLd, websiteJsonLd } from "@/lib/seo";
 
@@ -50,7 +51,9 @@ export default function RootLayout({
             __html: JSON.stringify([personJsonLd(), websiteJsonLd()]),
           }}
         />
-        <ThemeProvider>{children}</ThemeProvider>
+        <AuthSessionProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );

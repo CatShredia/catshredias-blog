@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { formatDateRu, toIsoString } from "@/lib/dates";
 import type { PostListItem } from "@/lib/queries/posts";
 
 type CategoryOption = { name: string; slug: string };
@@ -135,12 +136,10 @@ export function BlogListInfinite({
             <li key={post.id}>
               <Card href={`/blog/${post.slug}`}>
                 <time
-                  dateTime={post.publishedAt?.toISOString()}
+                  dateTime={toIsoString(post.publishedAt)}
                   className="text-xs text-muted"
                 >
-                  {post.publishedAt
-                    ? new Date(post.publishedAt).toLocaleDateString("ru-RU")
-                    : ""}
+                  {formatDateRu(post.publishedAt)}
                 </time>
                 <h2 className="mt-2 text-xl font-semibold">{post.title}</h2>
                 <p className="mt-2 text-sm text-muted">{post.excerpt}</p>
