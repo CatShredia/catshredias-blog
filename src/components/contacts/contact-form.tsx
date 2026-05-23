@@ -6,17 +6,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
-
-const contactSchema = z.object({
-  name: z.string().min(2, "Минимум 2 символа"),
-  email: z.string().email("Некорректный email"),
-  message: z.string().min(10, "Минимум 10 символов"),
-});
+import { contactSchema } from "@/lib/validations/contact";
 
 type ContactFormValues = z.infer<typeof contactSchema>;
 
 export function ContactForm() {
-  const [submitted, setSubmitted] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -26,9 +22,24 @@ export function ContactForm() {
     resolver: zodResolver(contactSchema),
   });
 
-  const onSubmit = handleSubmit(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    setSubmitted(true);
+  const onSubmit = handleSubmit(async (values) => {
+    setServerError(null);
+    setSuccess(null);
+
+    const response = await fetch("/api/contacts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
+    });
+
+    const data = (await response.json()) as { error?: string; message?: string };
+
+    if (!response.ok) {
+      setServerError(data.error ?? "Не удалось отправить сообщение");
+      return;
+    }
+
+    setSuccess(data.message ?? "Сообщение отправлено");
     reset();
   });
 
@@ -78,9 +89,14 @@ export function ContactForm() {
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Отправка…" : "Отправить"}
       </Button>
-      {submitted ? (
+      {serverError ? (
+        <p className="text-sm text-red-600" role="alert">
+          {serverError}
+        </p>
+      ) : null}
+      {success ? (
         <p className="text-sm text-muted" role="status">
-          Сообщение принято локально. Отправка на сервер — на этапе 3.
+          {success}
         </p>
       ) : null}
     </form>

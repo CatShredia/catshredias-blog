@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { formatDateRu, toIsoString } from "@/lib/dates";
 import type { PostListItem } from "@/lib/queries/posts";
 
-type CategoryOption = { name: string; slug: string };
+type FilterOption = { name: string; slug: string };
 
 type ApiResponse = {
   items: PostListItem[];
@@ -16,10 +16,12 @@ type ApiResponse = {
 
 export function BlogListInfinite({
   categories,
+  tags,
   initialItems,
   initialCursor,
 }: {
-  categories: CategoryOption[];
+  categories: FilterOption[];
+  tags: FilterOption[];
   initialItems: PostListItem[];
   initialCursor: string | null;
 }) {
@@ -27,6 +29,7 @@ export function BlogListInfinite({
   const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
+  const [tag, setTag] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -38,6 +41,7 @@ export function BlogListInfinite({
       nextCursor?: string | null;
       q?: string;
       categorySlug?: string;
+      tagSlug?: string;
     }) => {
       setLoading(true);
       setError(null);
@@ -46,6 +50,7 @@ export function BlogListInfinite({
       if (opts.nextCursor) params.set("cursor", opts.nextCursor);
       if (opts.q) params.set("q", opts.q);
       if (opts.categorySlug) params.set("category", opts.categorySlug);
+      if (opts.tagSlug) params.set("tag", opts.tagSlug);
 
       const response = await fetch(`/api/posts?${params}`);
       if (!response.ok) {
@@ -68,10 +73,15 @@ export function BlogListInfinite({
       return;
     }
     const timer = setTimeout(() => {
-      void fetchPosts({ reset: true, q: query, categorySlug: category });
+      void fetchPosts({
+        reset: true,
+        q: query,
+        categorySlug: category,
+        tagSlug: tag,
+      });
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, category, fetchPosts]);
+  }, [query, category, tag, fetchPosts]);
 
   useEffect(() => {
     if (!cursor || loading) return;
@@ -86,6 +96,7 @@ export function BlogListInfinite({
             nextCursor: cursor,
             q: query,
             categorySlug: category,
+            tagSlug: tag,
           });
         }
       },
@@ -94,12 +105,12 @@ export function BlogListInfinite({
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [cursor, loading, query, category, fetchPosts]);
+  }, [cursor, loading, query, category, tag, fetchPosts]);
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <label className="flex-1">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+        <label className="min-w-0 flex-1 sm:min-w-[12rem]">
           <span className="sr-only">Поиск</span>
           <input
             type="search"
@@ -109,15 +120,30 @@ export function BlogListInfinite({
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
           />
         </label>
-        <label>
+        <label className="sm:w-44">
           <span className="sr-only">Категория</span>
           <select
             value={category}
             onChange={(event) => setCategory(event.target.value)}
-            className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm sm:w-48"
+            className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
           >
             <option value="">Все категории</option>
             {categories.map((item) => (
+              <option key={item.slug} value={item.slug}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="sm:w-44">
+          <span className="sr-only">Тег</span>
+          <select
+            value={tag}
+            onChange={(event) => setTag(event.target.value)}
+            className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
+          >
+            <option value="">Все теги</option>
+            {tags.map((item) => (
               <option key={item.slug} value={item.slug}>
                 {item.name}
               </option>

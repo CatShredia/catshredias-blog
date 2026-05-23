@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { BlogListInfinite } from "@/components/blog/blog-list-infinite";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
-import { listCategories, listPublishedPosts } from "@/lib/queries/posts";
+import { listCategories, listPublishedPosts, listTags } from "@/lib/queries/posts";
 
 export const metadata: Metadata = {
   title: "Блог",
@@ -17,8 +17,9 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function BlogPage() {
-  const [categories, initial] = await Promise.all([
+  const [categories, tags, initial] = await Promise.all([
     listCategories(),
+    listTags(),
     listPublishedPosts({ limit: 6 }),
   ]);
 
@@ -35,6 +36,10 @@ export default async function BlogPage() {
           categories={categories.map((category) => ({
             name: category.name,
             slug: category.slug,
+          }))}
+          tags={tags.map((item) => ({
+            name: item.name,
+            slug: item.slug,
           }))}
           initialItems={initial.items}
           initialCursor={initial.nextCursor}

@@ -70,6 +70,7 @@ docker compose up -d --build
 | GET | `/api/posts?cursor=&q=&category=&limit=` | Лента постов (cursor) |
 | GET | `/api/projects?tech=&role=` | Портфолио |
 | POST | `/api/comments` | Новый комментарий (Turnstile) |
+| POST | `/api/contacts` | Форма обратной связи (rate limit) |
 | POST | `/api/cron/publish-scheduled` | Публикация отложенных постов |
 | GET | `/api/health` | Health + БД |
 
