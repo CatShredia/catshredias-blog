@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 
 import { mockPosts } from "../src/data/mock/posts";
 import { mockProjects } from "../src/data/mock/projects";
+import { siteProfile } from "../src/data/mock/site";
 import { slugify } from "../src/lib/slug";
 
 const prisma = new PrismaClient();
@@ -133,6 +134,24 @@ async function main() {
   }
 
   console.log(`Seeded ${mockProjects.length} projects`);
+
+  const sampleResumePdf =
+    "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+
+  await prisma.siteSettings.upsert({
+    where: { id: "site" },
+    update: {
+      hhUrl: siteProfile.social.hh,
+      resumePdf: sampleResumePdf,
+    },
+    create: {
+      id: "site",
+      hhUrl: siteProfile.social.hh,
+      resumePdf: sampleResumePdf,
+    },
+  });
+
+  console.log("Seeded site settings (portfolio hh.ru)");
 }
 
 main()

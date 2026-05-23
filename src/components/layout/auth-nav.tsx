@@ -4,8 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 
-import { isAdminRole } from "@/lib/auth-helpers";
-
 export function AuthNav() {
   const { data: session, status } = useSession();
 
@@ -61,14 +59,6 @@ export function AuthNav() {
           {displayName}
         </span>
       </Link>
-      {isAdminRole(session.user.role) ? (
-        <Link
-          href="/admin"
-          className="rounded-lg border border-border px-3 py-2 hover:bg-card min-h-11 inline-flex items-center"
-        >
-          Админка
-        </Link>
-      ) : null}
       <button
         type="button"
         onClick={() => signOut({ callbackUrl: "/" })}

@@ -1,9 +1,15 @@
+import { LookingForWorkStatus } from "@/components/site/looking-for-work-status";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { siteProfile } from "@/data/mock/site";
+import { getSiteSettings } from "@/lib/queries/site-settings";
 
-export default function HomePage() {
+export const revalidate = 60;
+
+export default async function HomePage() {
+  const settings = await getSiteSettings();
+
   return (
     <Container>
       <Section className="pt-12 sm:pt-20">
@@ -12,6 +18,9 @@ export default function HomePage() {
           {siteProfile.name}
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-muted">{siteProfile.tagline}</p>
+        <div className="mt-6">
+          <LookingForWorkStatus lookingForWork={settings.lookingForWork} />
+        </div>
         <div className="mt-8 flex flex-wrap gap-3">
           <ButtonLink href="/blog">Читать блог</ButtonLink>
           <ButtonLink href="/contacts" variant="secondary">

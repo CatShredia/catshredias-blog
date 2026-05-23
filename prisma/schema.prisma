@@ -201,3 +201,11 @@ model ContactMessage {
   ip        String?
   createdAt DateTime @default(now())
 }
+
+model SiteSettings {
+  id             String   @id @default("site")
+  hhUrl          String?
+  resumePdf      String?
+  lookingForWork Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+}

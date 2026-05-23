@@ -1,11 +1,13 @@
 import { PostStatus } from "@prisma/client";
 import { z } from "zod";
 
+import { optionalPathOrUrl } from "@/lib/validations/path-or-url";
+
 export const postFormSchema = z.object({
   title: z.string().min(1, "Укажите заголовок").max(200),
   slug: z.string().min(1, "Укажите slug").max(200),
   excerpt: z.string().max(500).optional(),
-  coverImage: z.string().optional(),
+  coverImage: optionalPathOrUrl.optional().or(z.literal("")),
   content: z.string().min(1, "Добавьте содержимое"),
   status: z.nativeEnum(PostStatus),
   publishedAt: z.string().optional(),

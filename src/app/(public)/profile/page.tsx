@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { ProfileForm } from "@/components/auth/profile-form";
+import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { auth } from "@/lib/auth";
+import { isAdminRole } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
@@ -34,6 +36,14 @@ export default async function ProfilePage() {
             name={dbUser?.name ?? session.user.name ?? ""}
             image={dbUser?.image ?? session.user.image ?? ""}
           />
+          {isAdminRole(session.user.role) ? (
+            <div className="mt-8 border-t border-border pt-8">
+              <h2 className="text-sm font-medium">Администрирование</h2>
+              <ButtonLink href="/admin" variant="secondary" className="mt-3">
+                Админка
+              </ButtonLink>
+            </div>
+          ) : null}
         </div>
       </Section>
     </Container>

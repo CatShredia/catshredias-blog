@@ -1,23 +1,26 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 
-type ImageUploadFieldProps = {
+type FileUploadFieldProps = {
   name: string;
   label: string;
   value?: string;
   onChange: (url: string) => void;
-  aspect?: "square" | "wide";
+  accept: string;
+  uploadLabel?: string;
+  urlPlaceholder?: string;
 };
 
-export function ImageUploadField({
+export function FileUploadField({
   name,
   label,
   value = "",
   onChange,
-  aspect = "wide",
-}: ImageUploadFieldProps) {
+  accept,
+  uploadLabel = "Загрузить файл",
+  urlPlaceholder = "или вставьте URL",
+}: FileUploadFieldProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,30 +46,28 @@ export function ImageUploadField({
     onChange(data.url);
   }
 
-  const previewClass =
-    aspect === "square" ? "h-24 w-24" : "h-32 w-full max-w-md";
-
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium">{label}</label>
       <input type="hidden" name={name} value={value} />
       {value ? (
-        <div className={`relative overflow-hidden rounded-lg border border-border ${previewClass}`}>
-          <Image
-            src={value}
-            alt=""
-            fill
-            className="object-cover"
-            unoptimized
-          />
-        </div>
+        <p className="text-sm">
+          <a
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent underline-offset-4 hover:underline"
+          >
+            {value}
+          </a>
+        </p>
       ) : null}
       <div className="flex flex-wrap items-center gap-2">
         <label className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card">
-          {uploading ? "Загрузка…" : "Выбрать файл"}
+          {uploading ? "Загрузка…" : uploadLabel}
           <input
             type="file"
-            accept="image/*"
+            accept={accept}
             className="sr-only"
             onChange={(event) => {
               const file = event.target.files?.[0];
@@ -86,7 +87,7 @@ export function ImageUploadField({
       </div>
       <input
         type="text"
-        placeholder="или путь /api/uploads/... / полный URL"
+        placeholder={urlPlaceholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"

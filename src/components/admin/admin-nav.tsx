@@ -6,6 +6,7 @@ const links = [
   { href: "/admin/formatting", label: "Markdown" },
   { href: "/admin/books", label: "Библиотека" },
   { href: "/admin/projects", label: "Проекты" },
+  { href: "/admin/portfolio-settings", label: "Портфолио" },
   { href: "/admin/comments", label: "Комментарии" },
   { href: "/admin/reports", label: "Жалобы" },
 ];

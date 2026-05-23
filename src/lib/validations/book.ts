@@ -1,12 +1,14 @@
 import { BookStatus } from "@prisma/client";
 import { z } from "zod";
 
+import { optionalPathOrUrl } from "@/lib/validations/path-or-url";
+
 export const bookFormSchema = z.object({
   title: z.string().min(1).max(200),
   slug: z.string().min(1).max(200),
   author: z.string().max(200).optional(),
   description: z.string().max(5000).optional(),
-  coverImage: z.string().optional(),
+  coverImage: optionalPathOrUrl.optional().or(z.literal("")),
   status: z.nativeEnum(BookStatus),
   rating: z.string().optional(),
   tags: z.string().optional(),
