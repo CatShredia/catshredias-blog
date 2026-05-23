@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminNav } from "@/components/admin/admin-nav";
 import { Container } from "@/components/ui/container";
 import { auth } from "@/lib/auth";
 
@@ -18,11 +19,7 @@ export default async function AdminLayout({
             <Link href="/admin" className="font-semibold">
               Админка
             </Link>
-            <nav className="flex gap-4 text-sm text-muted">
-              <Link href="/" className="hover:text-foreground">
-                На сайт
-              </Link>
-            </nav>
+            <AdminNav />
           </Container>
         </header>
       ) : null}

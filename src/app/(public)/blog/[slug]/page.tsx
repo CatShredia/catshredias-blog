@@ -2,55 +2,102 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { CommentSection } from "@/components/blog/comment-section";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
-import { getPostBySlug, mockPosts } from "@/data/mock/posts";
+import {
+  getPublishedPostBySlug,
+  getPublishedPostSlugs,
+} from "@/lib/queries/posts";
+import { articleJsonLd, siteUrl } from "@/lib/seo";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
+export const revalidate = 60;
+
 export async function generateStaticParams() {
-  return mockPosts.map((post) => ({ slug: post.slug }));
+  const posts = await getPublishedPostSlugs();
+  return posts.map((post) => ({ slug: post.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPublishedPostBySlug(slug);
   if (!post) return { title: "Не найдено" };
+
+  const description = post.excerpt ?? post.title;
+  const url = `${siteUrl}/blog/${post.slug}`;
+
   return {
     title: post.title,
-    description: post.excerpt,
+    description,
+    openGraph: {
+      title: post.title,
+      description,
+      type: "article",
+      publishedTime: post.publishedAt?.toISOString(),
+      url,
+    },
+    alternates: { canonical: url },
   };
 }
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPublishedPostBySlug(slug);
   if (!post) notFound();
+
+  const jsonLd = articleJsonLd(post);
 
   return (
     <Container className="py-10 sm:py-14">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Link href="/blog" className="text-sm text-muted hover:text-foreground">
         ← К блогу
       </Link>
       <article className="mt-6 max-w-3xl">
-        <time dateTime={post.publishedAt} className="text-sm text-muted">
-          {post.publishedAt}
+        <time
+          dateTime={post.publishedAt?.toISOString()}
+          className="text-sm text-muted"
+        >
+          {post.publishedAt
+            ? new Date(post.publishedAt).toLocaleDateString("ru-RU")
+            : ""}
         </time>
         <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
           {post.title}
         </h1>
         <div className="mt-4 flex flex-wrap gap-2">
           {post.tags.map((tag) => (
-            <Badge key={tag}>{tag}</Badge>
+            <Badge key={tag.slug}>{tag.name}</Badge>
           ))}
         </div>
         <div className="mt-8">
           <MarkdownContent content={post.content} />
         </div>
       </article>
+
+      <CommentSection
+        postId={post.id}
+        comments={post.comments.map((comment) => ({
+          id: comment.id,
+          authorName: comment.authorName,
+          content: comment.content,
+          createdAt: comment.createdAt,
+          replies: comment.replies.map((reply) => ({
+            id: reply.id,
+            authorName: reply.authorName,
+            content: reply.content,
+            createdAt: reply.createdAt,
+          })),
+        }))}
+      />
     </Container>
   );
 }

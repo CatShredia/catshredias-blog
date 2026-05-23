@@ -1,16 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { BlogList } from "@/components/blog/blog-list";
+import { BlogListInfinite } from "@/components/blog/blog-list-infinite";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
+import { listCategories, listPublishedPosts } from "@/lib/queries/posts";
 
 export const metadata: Metadata = {
   title: "Блог",
   description: "Статьи о разработке, инфраструктуре и UI",
+  openGraph: {
+    title: "Блог | Catshredia",
+    description: "Статьи о разработке, инфраструктуре и UI",
+  },
 };
 
-export default function BlogPage() {
+export const revalidate = 60;
+
+export default async function BlogPage() {
+  const [categories, initial] = await Promise.all([
+    listCategories(),
+    listPublishedPosts({ limit: 6 }),
+  ]);
+
   return (
     <Container>
       <Section className="pt-10">
@@ -18,7 +30,7 @@ export default function BlogPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Блог</h1>
             <p className="mt-2 text-muted">
-              Mock-лента для проверки UX до подключения API.
+              Лента с поиском, фильтрами и подгрузкой при прокрутке.
             </p>
           </div>
           <Link
@@ -28,7 +40,14 @@ export default function BlogPage() {
             Правила Markdown
           </Link>
         </div>
-        <BlogList />
+        <BlogListInfinite
+          categories={categories.map((category) => ({
+            name: category.name,
+            slug: category.slug,
+          }))}
+          initialItems={initial.items}
+          initialCursor={initial.nextCursor}
+        />
       </Section>
     </Container>
   );

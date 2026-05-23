@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { personJsonLd, websiteJsonLd } from "@/lib/seo";
 
 import "./globals.css";
 
@@ -43,6 +44,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([personJsonLd(), websiteJsonLd()]),
+          }}
+        />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
