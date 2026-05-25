@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { MarkdownEditor } from "@/components/admin/markdown-editor";
 import { Button } from "@/components/ui/button";
-import { slugify } from "@/lib/slug";
+import { generatePostSlug } from "@/lib/post-slug";
 
 type ProjectFormProps = {
   mode: "create" | "edit";
@@ -76,7 +76,7 @@ export function ProjectForm({ mode, project, saveAction }: ProjectFormProps) {
             value={title}
             onChange={(event) => {
               setTitle(event.target.value);
-              if (!slugTouched) setSlug(slugify(event.target.value));
+              if (!slugTouched) setSlug(generatePostSlug(event.target.value));
             }}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
           />

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CommentSection } from "@/components/blog/comment-section";
-import { MarkdownContent } from "@/components/markdown/markdown-content";
+import { PostArticleLayout } from "@/components/blog/post-article-layout";
 import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
+import { SafeImage } from "@/components/ui/safe-image";
 import { listApprovedComments } from "@/lib/queries/comments";
 import {
   getPublishedPostBySlug,
@@ -60,38 +60,36 @@ export default async function BlogPostPage({ params }: PageProps) {
       <Link href="/blog" className="text-sm text-muted hover:text-foreground">
         ← К блогу
       </Link>
-      <article className="mt-6 max-w-3xl">
-        {post.coverImage ? (
-          <div className="relative mb-6 aspect-[2/1] overflow-hidden rounded-xl border border-border">
-            <Image
-              src={post.coverImage}
-              alt=""
-              fill
-              className="object-cover"
-              priority
-              unoptimized
-            />
+      <article className="mt-6 max-w-none">
+        <PostArticleLayout content={post.content}>
+          {post.coverImage ? (
+            <div className="relative mb-6 aspect-[2/1] overflow-hidden rounded-xl border border-border">
+              <SafeImage
+                src={post.coverImage}
+                alt=""
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, 768px"
+              />
+            </div>
+          ) : null}
+          <time
+            dateTime={post.publishedAt?.toISOString()}
+            className="text-sm text-muted"
+          >
+            {post.publishedAt
+              ? new Date(post.publishedAt).toLocaleDateString("ru-RU")
+              : ""}
+          </time>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+            {post.title}
+          </h1>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {post.tags.map((tag) => (
+              <Badge key={tag.slug}>{tag.name}</Badge>
+            ))}
           </div>
-        ) : null}
-        <time
-          dateTime={post.publishedAt?.toISOString()}
-          className="text-sm text-muted"
-        >
-          {post.publishedAt
-            ? new Date(post.publishedAt).toLocaleDateString("ru-RU")
-            : ""}
-        </time>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-          {post.title}
-        </h1>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {post.tags.map((tag) => (
-            <Badge key={tag.slug}>{tag.name}</Badge>
-          ))}
-        </div>
-        <div className="mt-8">
-          <MarkdownContent content={post.content} />
-        </div>
+        </PostArticleLayout>
       </article>
 
       <CommentSection

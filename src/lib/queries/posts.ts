@@ -68,38 +68,61 @@ export function decodePostsCursor(cursor: string): PostsCursor | null {
   }
 }
 
+export type PostSort = "newest" | "oldest";
+
+function postOrderBy(sort: PostSort): Prisma.PostOrderByWithRelationInput[] {
+  return sort === "oldest"
+    ? [{ publishedAt: "asc" }, { id: "asc" }]
+    : [{ publishedAt: "desc" }, { id: "desc" }];
+}
+
+function postCursorFilter(
+  decoded: PostsCursor,
+  sort: PostSort,
+): Prisma.PostWhereInput {
+  const publishedAt = new Date(decoded.publishedAt);
+  if (sort === "oldest") {
+    return {
+      OR: [
+        { publishedAt: { gt: publishedAt } },
+        { publishedAt, id: { gt: decoded.id } },
+      ],
+    };
+  }
+  return {
+    OR: [
+      { publishedAt: { lt: publishedAt } },
+      { publishedAt, id: { lt: decoded.id } },
+    ],
+  };
+}
+
 export async function listPublishedPosts({
   limit = 6,
   cursor,
   q,
   categorySlug,
   tagSlug,
+  sort = "newest",
 }: {
   limit?: number;
   cursor?: string;
   q?: string;
   categorySlug?: string;
   tagSlug?: string;
+  sort?: PostSort;
 }) {
   const decoded = cursor ? decodePostsCursor(cursor) : null;
   const where = publishedWhere(q, categorySlug, tagSlug);
 
   const cursorFilter: Prisma.PostWhereInput | undefined = decoded
-    ? {
-        OR: [
-          { publishedAt: { lt: new Date(decoded.publishedAt) } },
-          {
-            publishedAt: new Date(decoded.publishedAt),
-            id: { lt: decoded.id },
-          },
-        ],
-      }
+    ? postCursorFilter(decoded, sort)
     : undefined;
 
   const items = await prisma.post.findMany({
     where: cursorFilter ? { AND: [where, cursorFilter] } : where,
     select: postListSelect,
-    orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
+    orderBy: postOrderBy(sort),
     take: limit + 1,
   });
 

@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
     const q = searchParams.get("q") ?? undefined;
     const category = searchParams.get("category") ?? undefined;
     const tag = searchParams.get("tag") ?? undefined;
+    const sortParam = searchParams.get("sort");
+    const sort = sortParam === "oldest" ? "oldest" : "newest";
     const limit = Math.min(
       Number(searchParams.get("limit") ?? "6") || 6,
       20,
@@ -20,6 +22,7 @@ export async function GET(request: NextRequest) {
       q,
       categorySlug: category,
       tagSlug: tag,
+      sort,
       limit,
     });
 

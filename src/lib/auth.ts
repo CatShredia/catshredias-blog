@@ -117,27 +117,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true;
     },
     async jwt({ token, user, trigger }) {
-      if (user && "role" in user) {
-        token.role = user.role;
+      if (user) {
+        if ("role" in user && user.role) {
+          token.role = user.role;
+        } else if (user.email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email.toLowerCase() },
+            select: { id: true, role: true, name: true, image: true },
+          });
+          if (dbUser) {
+            token.sub = dbUser.id;
+            token.role = dbUser.role;
+            token.name = dbUser.name;
+            token.picture = dbUser.image;
+          }
+        }
         token.name = user.name ?? token.name;
         token.picture = user.image ?? token.picture;
       }
 
+      // Only on explicit session update (Node.js), not in Edge middleware.
       if (trigger === "update" && token.sub) {
-        const dbUser = await prisma.user.findUnique({
+        let dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { name: true, image: true, role: true },
+          select: { id: true, role: true, name: true, image: true },
         });
-        if (dbUser) {
-          token.name = dbUser.name;
-          token.picture = dbUser.image;
-          token.role = dbUser.role;
+
+        if (!dbUser && token.email) {
+          dbUser = await prisma.user.findUnique({
+            where: { email: String(token.email).toLowerCase() },
+            select: { id: true, role: true, name: true, image: true },
+          });
+          if (dbUser) {
+            token.sub = dbUser.id;
+          }
         }
-      } else if (token.sub && !token.role) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: { role: true, name: true, image: true },
-        });
+
         if (dbUser) {
           token.role = dbUser.role;
           token.name = dbUser.name;

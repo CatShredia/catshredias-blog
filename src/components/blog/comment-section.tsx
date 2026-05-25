@@ -1,7 +1,7 @@
 "use client";
 
 import { Turnstile } from "@marsidev/react-turnstile";
-import Image from "next/image";
+import { SafeImage } from "@/components/ui/safe-image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -208,7 +208,7 @@ function CommentCard({
       <div className="flex items-start gap-3">
         {comment.authorImage ? (
           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full">
-            <Image src={comment.authorImage} alt="" fill className="object-cover" unoptimized />
+            <SafeImage src={comment.authorImage} alt="" fill />
           </div>
         ) : (
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card text-sm font-medium">

@@ -12,6 +12,7 @@ const bookListSelect = {
   coverImage: true,
   status: true,
   rating: true,
+  readAt: true,
   tags: { select: { name: true, slug: true } },
   reviewPost: {
     select: { id: true, slug: true, title: true },

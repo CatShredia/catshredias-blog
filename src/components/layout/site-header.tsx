@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Container } from "@/components/ui/container";
 
 const nav = [
-  { href: "/", label: "Главная" },
+  // { href: "/", label: "Главная" },
   { href: "/blog", label: "Блог" },
   { href: "/library", label: "Библиотека" },
   { href: "/portfolio", label: "Портфолио" },

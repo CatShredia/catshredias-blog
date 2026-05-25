@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth";
+import { resolveSessionDbUser } from "@/lib/auth-helpers";
 import { createReport } from "@/lib/queries/comments";
 import { rateLimit } from "@/lib/rate-limit";
 import { reportSchema } from "@/lib/validations/comment";
@@ -8,14 +8,14 @@ import { reportSchema } from "@/lib/validations/comment";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const dbUser = await resolveSessionDbUser();
+  if (!dbUser) {
     return NextResponse.json({ error: "Требуется авторизация" }, { status: 401 });
   }
 
   const { id: commentId } = await context.params;
 
-  const limited = rateLimit(`report:${session.user.id}`, 5, 60_000);
+  const limited = rateLimit(`report:${dbUser.id}`, 5, 60_000);
   if (!limited.ok) {
     return NextResponse.json({ error: "Слишком много жалоб" }, { status: 429 });
   }
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const body = reportSchema.parse(await request.json());
     await createReport({
       commentId,
-      reporterId: session.user.id,
+      reporterId: dbUser.id,
       reason: body.reason,
     });
     return NextResponse.json({ message: "Жалоба отправлена администратору" });

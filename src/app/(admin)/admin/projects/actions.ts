@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { uniqueSlugWithSuffix } from "@/lib/post-slug";
 import { slugify } from "@/lib/slug";
 import {
   parseCommaList,
@@ -36,12 +37,11 @@ function emptyToNull(value?: string) {
 export async function createProjectAction(formData: FormData) {
   await requireAdmin();
   const data = parseFormData(formData);
-  const slug = slugify(data.slug) || slugify(data.title);
-
-  const existing = await prisma.project.findUnique({ where: { slug } });
-  if (existing) {
-    throw new Error("Проект с таким slug уже существует");
-  }
+  const slug = await uniqueSlugWithSuffix(
+    data.slug || data.title,
+    async (candidate) => !!(await prisma.project.findUnique({ where: { slug: candidate } })),
+    "project",
+  );
 
   const project = await prisma.project.create({
     data: {

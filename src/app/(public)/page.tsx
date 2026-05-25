@@ -1,3 +1,4 @@
+import { BioParagraph } from "@/components/site/bio-paragraph";
 import { LookingForWorkStatus } from "@/components/site/looking-for-work-status";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -31,9 +32,9 @@ export default async function HomePage() {
       </Section>
 
       <Section title="Обо мне">
-        <div className="max-w-3xl space-y-4 text-muted leading-relaxed">
+        <div className="max-w-3xl space-y-4 text-muted">
           {siteProfile.bio.map((paragraph) => (
-            <p key={paragraph.slice(0, 24)}>{paragraph}</p>
+            <BioParagraph key={paragraph} content={paragraph} />
           ))}
         </div>
       </Section>

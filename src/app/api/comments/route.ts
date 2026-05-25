@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth";
+import { resolveSessionDbUser } from "@/lib/auth-helpers";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { createComment } from "@/lib/queries/comments";
@@ -9,15 +9,15 @@ import { verifyTurnstile } from "@/lib/turnstile";
 import { commentSchema } from "@/lib/validations/comment";
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id || !session.user.email) {
+  const dbUser = await resolveSessionDbUser();
+  if (!dbUser) {
     return NextResponse.json(
       { error: "Войдите или зарегистрируйтесь, чтобы оставить комментарий" },
       { status: 401 },
     );
   }
 
-  const limited = rateLimit(`comments:${session.user.id}`, 10, 60_000);
+  const limited = rateLimit(`comments:${dbUser.id}`, 10, 60_000);
   if (!limited.ok) {
     return NextResponse.json(
       { error: "Слишком много запросов. Попробуйте позже." },
@@ -44,12 +44,12 @@ export async function POST(request: NextRequest) {
     }
 
     const authorName =
-      session.user.name?.trim() || session.user.email.split("@")[0];
-    const authorEmail = session.user.email;
+      dbUser.name?.trim() || dbUser.email.split("@")[0];
+    const authorEmail = dbUser.email;
 
     const comment = await createComment({
       postId: body.postId,
-      userId: session.user.id,
+      userId: dbUser.id,
       authorName,
       authorEmail,
       content: body.content,
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     logger.info("Comment created", {
       commentId: comment.id,
       postId: post.id,
-      userId: session.user.id,
+      userId: dbUser.id,
     });
 
     return NextResponse.json(

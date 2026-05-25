@@ -6,7 +6,7 @@ import { useState } from "react";
 import { MarkdownEditor } from "@/components/admin/markdown-editor";
 import { Button } from "@/components/ui/button";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
-import { slugify } from "@/lib/slug";
+import { generatePostSlug } from "@/lib/post-slug";
 
 type PostFormProps = {
   mode: "create" | "edit";
@@ -49,7 +49,7 @@ export function PostForm({ mode, post, saveAction }: PostFormProps) {
             onChange={(event) => {
               setTitle(event.target.value);
               if (!slugTouched) {
-                setSlug(slugify(event.target.value));
+                setSlug(generatePostSlug(event.target.value));
               }
             }}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"

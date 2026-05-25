@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 import { ContactForm } from "@/components/contacts/contact-form";
+import { SocialLinks } from "@/components/site/social-links";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
-import { siteProfile } from "@/data/mock/site";
 
 export const metadata: Metadata = {
   title: "Контакты",
@@ -22,36 +22,10 @@ export default function ContactsPage() {
           <ContactForm />
           <aside className="space-y-4 text-sm">
             <h2 className="text-lg font-semibold">Ссылки</h2>
-            <ul className="space-y-2 text-muted">
-              <li>
-                <a
-                  href={`mailto:${siteProfile.social.email}`}
-                  className="hover:text-foreground"
-                >
-                  {siteProfile.social.email}
-                </a>
-              </li>
-              <li>
-                <a
-                  href={siteProfile.social.telegram}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  className="hover:text-foreground"
-                >
-                  Telegram
-                </a>
-              </li>
-              <li>
-                <a
-                  href={siteProfile.social.github}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  className="hover:text-foreground"
-                >
-                  GitHub
-                </a>
-              </li>
-            </ul>
+            <SocialLinks
+              variant="col"
+              linkClassName="text-muted hover:text-foreground"
+            />
           </aside>
         </div>
       </Section>

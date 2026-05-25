@@ -1,11 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
+import { SafeImage } from "@/components/ui/safe-image";
 
 export function ProfileForm({
   name: initialName,
@@ -20,6 +21,7 @@ export function ProfileForm({
   const [image, setImage] = useState(initialImage);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   async function uploadAvatar(file: File) {
     setUploading(true);
@@ -68,7 +70,7 @@ export function ProfileForm({
       <div className="flex items-center gap-4">
         <div className="relative h-20 w-20 overflow-hidden rounded-full border border-border bg-card">
           {image ? (
-            <Image src={image} alt="" fill className="object-cover" unoptimized />
+            <SafeImage src={image} alt="" fill />
           ) : (
             <span className="flex h-full w-full items-center justify-center text-2xl font-medium">
               {name.charAt(0).toUpperCase() || "?"}
@@ -83,11 +85,30 @@ export function ProfileForm({
             className="sr-only"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) void uploadAvatar(file);
+              if (file) {
+                setCropSrc(URL.createObjectURL(file));
+              }
+              e.target.value = "";
             }}
           />
         </label>
       </div>
+
+      {cropSrc ? (
+        <ImageCropDialog
+          imageSrc={cropSrc}
+          aspect={1}
+          onCancel={() => {
+            URL.revokeObjectURL(cropSrc);
+            setCropSrc(null);
+          }}
+          onComplete={(file) => {
+            URL.revokeObjectURL(cropSrc);
+            setCropSrc(null);
+            void uploadAvatar(file);
+          }}
+        />
+      ) : null}
 
       <form onSubmit={saveName} className="space-y-3">
         <label className="block text-sm font-medium">Отображаемое имя</label>

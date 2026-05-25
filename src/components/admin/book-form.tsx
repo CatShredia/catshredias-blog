@@ -2,12 +2,15 @@
 
 import { BookStatus } from "@prisma/client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { StarRatingInput } from "@/components/ui/star-rating";
 import { Button } from "@/components/ui/button";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { BOOK_STATUS_LABELS } from "@/lib/validations/book";
-import { slugify } from "@/lib/slug";
+import { toDateInputValue } from "@/lib/dates";
+import { generatePostSlug } from "@/lib/post-slug";
 
 type BookFormProps = {
   mode: "create" | "edit";
@@ -21,6 +24,7 @@ type BookFormProps = {
     coverImage: string | null;
     status: BookStatus;
     rating: number | null;
+    readAt: Date | null;
     tags: { name: string }[];
     reviewPost?: {
       id: string;
@@ -30,7 +34,7 @@ type BookFormProps = {
     } | null;
   };
   publishedPosts?: { id: string; title: string; slug: string }[];
-  linkReviewAction?: (bookId: string, postId: string) => Promise<void>;
+  linkReviewAction?: (postId: string) => Promise<void>;
 };
 
 export function BookForm({
@@ -40,11 +44,14 @@ export function BookForm({
   publishedPosts = [],
   linkReviewAction,
 }: BookFormProps) {
+  const router = useRouter();
   const [title, setTitle] = useState(book?.title ?? "");
   const [slug, setSlug] = useState(book?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(mode === "edit");
   const [coverImage, setCoverImage] = useState(book?.coverImage ?? "");
   const [linkPostId, setLinkPostId] = useState("");
+  const [linking, setLinking] = useState(false);
+  const [linkMessage, setLinkMessage] = useState<string | null>(null);
 
   return (
     <form action={saveAction} className="space-y-6">
@@ -57,7 +64,7 @@ export function BookForm({
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
-              if (!slugTouched) setSlug(slugify(e.target.value));
+              if (!slugTouched) setSlug(generatePostSlug(e.target.value));
             }}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
           />
@@ -119,20 +126,19 @@ export function BookForm({
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium">Рейтинг (1–5)</label>
-          <select
-            name="rating"
-            defaultValue={book?.rating?.toString() ?? ""}
-            className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
-          >
-            <option value="">Без оценки</option>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>
-                {n} ★
-              </option>
-            ))}
-          </select>
+          <label className="mb-1 block text-sm font-medium">Рейтинг</label>
+          <StarRatingInput name="rating" defaultValue={book?.rating} />
         </div>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">Дата прочтения</label>
+        <input
+          type="date"
+          name="readAt"
+          defaultValue={toDateInputValue(book?.readAt)}
+          className="min-h-11 w-full max-w-xs rounded-lg border border-border bg-card px-3"
+        />
       </div>
 
       <div>
@@ -156,28 +162,52 @@ export function BookForm({
               </Link>
             </p>
           ) : linkReviewAction && publishedPosts.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <select
-                value={linkPostId}
-                onChange={(e) => setLinkPostId(e.target.value)}
-                className="min-h-11 flex-1 rounded-lg border border-border bg-background px-3 text-sm"
-              >
-                <option value="">Выберите опубликованный пост</option>
-                {publishedPosts.map((post) => (
-                  <option key={post.id} value={post.id}>
-                    {post.title}
-                  </option>
-                ))}
-              </select>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={!linkPostId}
-                onClick={() => linkPostId && void linkReviewAction(book.id, linkPostId)}
-              >
-                Привязать
-              </Button>
-            </div>
+            <>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <select
+                  value={linkPostId}
+                  onChange={(e) => setLinkPostId(e.target.value)}
+                  className="min-h-11 flex-1 rounded-lg border border-border bg-background px-3 text-sm"
+                >
+                  <option value="">Выберите опубликованный пост</option>
+                  {publishedPosts.map((post) => (
+                    <option key={post.id} value={post.id}>
+                      {post.title}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!linkPostId || linking}
+                  onClick={() => {
+                    if (!linkPostId || !linkReviewAction) return;
+                    setLinking(true);
+                    setLinkMessage(null);
+                    void linkReviewAction(linkPostId)
+                      .then(() => {
+                        setLinkPostId("");
+                        router.refresh();
+                      })
+                      .catch((error: unknown) => {
+                        setLinkMessage(
+                          error instanceof Error
+                            ? error.message
+                            : "Не удалось привязать пост",
+                        );
+                      })
+                      .finally(() => setLinking(false));
+                  }}
+                >
+                  {linking ? "Привязка…" : "Привязать"}
+                </Button>
+              </div>
+              {linkMessage ? (
+                <p className="mt-2 text-sm text-red-600" role="alert">
+                  {linkMessage}
+                </p>
+              ) : null}
+            </>
           ) : (
             <p className="mt-2 text-sm text-muted">
               Создайте и опубликуйте пост в блоге, затем привяжите его здесь.

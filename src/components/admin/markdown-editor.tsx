@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown/markdown-content";
+import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
 
 type MarkdownEditorProps = {
   name: string;
@@ -23,9 +24,14 @@ export function MarkdownEditor({
   label = "Содержимое (Markdown)",
 }: MarkdownEditorProps) {
   const textareaId = useId();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(() => readDraft(draftKey, initialValue));
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [pendingName, setPendingName] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -38,9 +44,38 @@ export function MarkdownEditor({
     };
   }, [value, draftKey]);
 
-  const insertAtCursor = useCallback((snippet: string) => {
-    setValue((prev) => `${prev}${prev.endsWith("\n") || prev.length === 0 ? "" : "\n"}${snippet}\n`);
-  }, []);
+  useEffect(() => {
+    if (cursor == null) return;
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.focus();
+    textarea.setSelectionRange(cursor, cursor);
+    setCursor(null);
+  }, [value, cursor]);
+
+  const insertSnippet = useCallback((snippet: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setValue(
+        (prev) =>
+          `${prev}${prev.endsWith("\n") || prev.length === 0 ? "" : "\n"}${snippet}\n`,
+      );
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    const needsLeadingNewline = before.length > 0 && !before.endsWith("\n");
+    const needsTrailingNewline = after.length > 0 && !after.startsWith("\n");
+    const insertion = `${needsLeadingNewline ? "\n" : ""}${snippet}${needsTrailingNewline ? "\n" : ""}`;
+    const next = `${before}${insertion}${after}`;
+    const nextCursor = before.length + insertion.length;
+
+    setValue(next);
+    setCursor(nextCursor);
+  }, [value]);
 
   async function uploadFile(file: File) {
     setUploading(true);
@@ -63,17 +98,41 @@ export function MarkdownEditor({
 
     const data = (await response.json()) as { url: string };
     if (file.type === "application/pdf") {
-      insertAtCursor(`[PDF](${data.url})`);
+      insertSnippet(`[PDF](${data.url})`);
     } else {
-      insertAtCursor(`![${file.name}](${data.url})`);
+      const alt = file.name.replace(/\.[^.]+$/, "") || "image";
+      insertSnippet(`![${alt}](${data.url})`);
     }
-    setMessage("Файл загружен");
+    setMessage("Файл вставлен в текст");
   }
 
   function onDrop(event: React.DragEvent) {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
-    if (file) void uploadFile(file);
+    if (file) void handleFile(file);
+  }
+
+  function handleFile(file: File) {
+    if (file.type.startsWith("image/")) {
+      setPendingName(file.name);
+      setCropSrc(URL.createObjectURL(file));
+      return;
+    }
+    void uploadFile(file);
+  }
+
+  function onPaste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+      if (!item.type.startsWith("image/")) continue;
+      const file = item.getAsFile();
+      if (!file) continue;
+      event.preventDefault();
+      handleFile(file);
+      return;
+    }
   }
 
   return (
@@ -82,16 +141,37 @@ export function MarkdownEditor({
         <label htmlFor={textareaId} className="text-sm font-medium">
           {label}
         </label>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card disabled:opacity-50"
+            disabled={uploading}
+            onClick={() => imageInputRef.current?.click()}
+          >
+            {uploading ? "Загрузка…" : "Вставить изображение"}
+          </button>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) handleFile(file);
+              event.target.value = "";
+            }}
+          />
           <label className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card">
-            {uploading ? "Загрузка…" : "Загрузить файл"}
+            PDF
             <input
               type="file"
-              accept="image/*,application/pdf"
+              accept="application/pdf"
               className="sr-only"
+              disabled={uploading}
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) void uploadFile(file);
+                event.target.value = "";
               }}
             />
           </label>
@@ -111,15 +191,17 @@ export function MarkdownEditor({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <textarea
+          ref={textareaRef}
           id={textareaId}
           name={name}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           onDrop={onDrop}
           onDragOver={(event) => event.preventDefault()}
+          onPaste={onPaste}
           rows={18}
           className="w-full rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm"
-          placeholder="Пишите Markdown… Перетащите изображение для вставки."
+          placeholder="Пишите Markdown… Перетащите или вставьте (Ctrl+V) изображение."
         />
         <div className="rounded-lg border border-border bg-card p-4">
           <p className="mb-2 text-xs font-medium text-muted">Предпросмотр</p>
@@ -128,8 +210,28 @@ export function MarkdownEditor({
       </div>
 
       {message ? <p className="text-xs text-muted">{message}</p> : null}
+      {cropSrc ? (
+        <ImageCropDialog
+          imageSrc={cropSrc}
+          onCancel={() => {
+            URL.revokeObjectURL(cropSrc);
+            setCropSrc(null);
+            setPendingName(null);
+          }}
+          onComplete={(file) => {
+            URL.revokeObjectURL(cropSrc);
+            setCropSrc(null);
+            const named = pendingName
+              ? new File([file], pendingName, { type: file.type })
+              : file;
+            setPendingName(null);
+            void uploadFile(named);
+          }}
+        />
+      ) : null}
       <p className="text-xs text-muted">
-        Автосохранение в localStorage каждые 500 мс.
+        Изображения: кнопка, перетаскивание в поле или вставка из буфера. Автосохранение
+        каждые 500 мс.
       </p>
     </div>
   );

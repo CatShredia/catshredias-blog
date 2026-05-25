@@ -11,6 +11,7 @@ export const bookFormSchema = z.object({
   coverImage: optionalPathOrUrl.optional().or(z.literal("")),
   status: z.nativeEnum(BookStatus),
   rating: z.string().optional(),
+  readAt: z.string().optional(),
   tags: z.string().optional(),
 });
 

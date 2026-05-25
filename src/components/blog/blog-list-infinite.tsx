@@ -14,6 +14,8 @@ type ApiResponse = {
   nextCursor: string | null;
 };
 
+type SortOption = "newest" | "oldest";
+
 export function BlogListInfinite({
   categories,
   tags,
@@ -30,6 +32,7 @@ export function BlogListInfinite({
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [tag, setTag] = useState("");
+  const [sort, setSort] = useState<SortOption>("newest");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -42,6 +45,7 @@ export function BlogListInfinite({
       q?: string;
       categorySlug?: string;
       tagSlug?: string;
+      sort?: SortOption;
     }) => {
       setLoading(true);
       setError(null);
@@ -51,6 +55,7 @@ export function BlogListInfinite({
       if (opts.q) params.set("q", opts.q);
       if (opts.categorySlug) params.set("category", opts.categorySlug);
       if (opts.tagSlug) params.set("tag", opts.tagSlug);
+      if (opts.sort) params.set("sort", opts.sort);
 
       const response = await fetch(`/api/posts?${params}`);
       if (!response.ok) {
@@ -78,10 +83,11 @@ export function BlogListInfinite({
         q: query,
         categorySlug: category,
         tagSlug: tag,
+        sort,
       });
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, category, tag, fetchPosts]);
+  }, [query, category, tag, sort, fetchPosts]);
 
   useEffect(() => {
     if (!cursor || loading) return;
@@ -97,6 +103,7 @@ export function BlogListInfinite({
             q: query,
             categorySlug: category,
             tagSlug: tag,
+            sort,
           });
         }
       },
@@ -105,7 +112,7 @@ export function BlogListInfinite({
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [cursor, loading, query, category, tag, fetchPosts]);
+  }, [cursor, loading, query, category, tag, sort, fetchPosts]);
 
   return (
     <div className="space-y-8">
@@ -148,6 +155,17 @@ export function BlogListInfinite({
                 {item.name}
               </option>
             ))}
+          </select>
+        </label>
+        <label className="sm:w-48">
+          <span className="sr-only">Сортировка по дате</span>
+          <select
+            value={sort}
+            onChange={(event) => setSort(event.target.value as SortOption)}
+            className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
+          >
+            <option value="newest">Сначала новые</option>
+            <option value="oldest">Сначала старые</option>
           </select>
         </label>
       </div>

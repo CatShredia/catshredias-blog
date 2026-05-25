@@ -1,12 +1,14 @@
 "use server";
 
-import { BookStatus } from "@prisma/client";
+import { BookStatus, PostStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/admin-auth";
+import { parseDateInput } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 import { upsertBookTags } from "@/lib/queries/books";
+import { uniqueSlugWithSuffix } from "@/lib/post-slug";
 import { slugify } from "@/lib/slug";
 import { bookFormSchema, parseCommaList } from "@/lib/validations/book";
 
@@ -20,6 +22,7 @@ function parseFormData(formData: FormData) {
     coverImage: formData.get("coverImage") || undefined,
     status: formData.get("status"),
     rating: ratingRaw ? String(ratingRaw) : undefined,
+    readAt: formData.get("readAt") || undefined,
     tags: formData.get("tags") || undefined,
   });
 }
@@ -41,18 +44,23 @@ function bookData(data: ReturnType<typeof parseFormData>, slug: string) {
     coverImage: data.coverImage || null,
     status: data.status as BookStatus,
     rating: parseRating(data.rating),
+    readAt: parseDateInput(data.readAt),
     tagNames,
   };
+}
+
+async function uniqueBookSlug(base: string): Promise<string> {
+  return uniqueSlugWithSuffix(
+    base,
+    async (slug) => !!(await prisma.book.findUnique({ where: { slug } })),
+    "book",
+  );
 }
 
 export async function createBookAction(formData: FormData) {
   await requireAdmin();
   const data = parseFormData(formData);
-  const slug = slugify(data.slug) || slugify(data.title);
-
-  if (await prisma.book.findUnique({ where: { slug } })) {
-    throw new Error("Книга с таким slug уже существует");
-  }
+  const slug = await uniqueBookSlug(data.slug || data.title);
 
   const parsed = bookData(data, slug);
   const book = await prisma.book.create({
@@ -64,6 +72,7 @@ export async function createBookAction(formData: FormData) {
       coverImage: parsed.coverImage,
       status: parsed.status,
       rating: parsed.rating,
+      readAt: parsed.readAt,
       tags: {
         connect: (await upsertBookTags(parsed.tagNames)).map((id) => ({ id })),
       },
@@ -98,6 +107,7 @@ export async function updateBookAction(id: string, formData: FormData) {
       coverImage: parsed.coverImage,
       status: parsed.status,
       rating: parsed.rating,
+      readAt: parsed.readAt,
       tags: { set: tagIds.map((tid) => ({ id: tid })) },
     },
   });
@@ -118,10 +128,30 @@ export async function deleteBookAction(id: string) {
 
 export async function linkReviewPostAction(bookId: string, postId: string) {
   await requireAdmin();
+
+  const [book, post] = await Promise.all([
+    prisma.book.findUnique({ where: { id: bookId }, select: { id: true } }),
+    prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true, status: true, bookId: true },
+    }),
+  ]);
+
+  if (!book) throw new Error("Книга не найдена");
+  if (!post) throw new Error("Пост не найден");
+  if (post.status !== PostStatus.PUBLISHED) {
+    throw new Error("Можно привязать только опубликованный пост");
+  }
+  if (post.bookId && post.bookId !== bookId) {
+    throw new Error("Пост уже привязан к другой книге");
+  }
+
   await prisma.post.update({
     where: { id: postId },
     data: { bookId },
   });
+
   revalidatePath("/library");
   revalidatePath("/admin/books");
+  revalidatePath(`/admin/books/${bookId}/edit`);
 }

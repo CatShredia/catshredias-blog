@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { SafeImage } from "@/components/ui/safe-image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { MarkdownContent } from "@/components/markdown/markdown-content";
+import { StarRatingDisplay } from "@/components/ui/star-rating";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { getBookBySlug } from "@/lib/queries/books";
+import { formatDateRu } from "@/lib/dates";
 import { siteUrl } from "@/lib/seo";
 import { BOOK_STATUS_LABELS } from "@/lib/validations/book";
 
@@ -46,13 +48,11 @@ export default async function BookPage({ params }: PageProps) {
       <div className="mt-6 grid gap-8 lg:grid-cols-[240px_1fr]">
         {book.coverImage ? (
           <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-border">
-            <Image
+            <SafeImage
               src={book.coverImage}
               alt={book.title}
               fill
-              className="object-cover"
               priority
-              unoptimized
             />
           </div>
         ) : null}
@@ -63,8 +63,15 @@ export default async function BookPage({ params }: PageProps) {
           {book.author ? (
             <p className="mt-2 text-lg text-muted">{book.author}</p>
           ) : null}
+          {book.readAt ? (
+            <p className="mt-2 text-sm text-muted">
+              Прочитано: {formatDateRu(book.readAt)}
+            </p>
+          ) : null}
           {book.rating ? (
-            <p className="mt-3 text-xl">{"★".repeat(book.rating)}</p>
+            <p className="mt-3">
+              <StarRatingDisplay value={book.rating} className="text-2xl" />
+            </p>
           ) : null}
           <div className="mt-4 flex flex-wrap gap-2">
             {book.tags.map((tag) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { SafeImage } from "@/components/ui/safe-image";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 
@@ -42,12 +42,10 @@ export function AuthNav() {
       >
         <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-border bg-card">
           {session.user.image ? (
-            <Image
+            <SafeImage
               src={session.user.image}
               alt=""
               fill
-              className="object-cover"
-              unoptimized
             />
           ) : (
             <span className="flex h-full w-full items-center justify-center text-sm font-medium">

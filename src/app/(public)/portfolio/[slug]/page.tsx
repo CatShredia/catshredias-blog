@@ -82,17 +82,17 @@ export default async function ProjectPage({ params }: PageProps) {
         </div>
       </header>
 
-      <Section title="Проблема">
+      <Section title="Проблема" compact>
         <div className="max-w-3xl text-muted">
           <MarkdownContent content={project.problem} />
         </div>
       </Section>
-      <Section title="Решение">
+      <Section title="Решение" compact>
         <div className="max-w-3xl text-muted">
           <MarkdownContent content={project.solution} />
         </div>
       </Section>
-      <Section title="Результат">
+      <Section title="Результат" compact>
         <div className="max-w-3xl text-muted">
           <MarkdownContent content={project.result} />
         </div>

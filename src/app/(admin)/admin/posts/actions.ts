@@ -10,6 +10,7 @@ import {
   upsertCategories,
   upsertTags,
 } from "@/lib/queries/admin";
+import { uniqueSlugWithSuffix } from "@/lib/post-slug";
 import { slugify } from "@/lib/slug";
 import {
   parseCommaList,
@@ -30,15 +31,18 @@ function parseFormData(formData: FormData) {
   });
 }
 
+async function uniquePostSlug(base: string): Promise<string> {
+  return uniqueSlugWithSuffix(
+    base,
+    async (slug) => !!(await prisma.post.findUnique({ where: { slug } })),
+    "post",
+  );
+}
+
 export async function createPostAction(formData: FormData) {
   const session = await requireAdmin();
   const data = parseFormData(formData);
-  const slug = slugify(data.slug) || slugify(data.title);
-
-  const existing = await prisma.post.findUnique({ where: { slug } });
-  if (existing) {
-    throw new Error("Пост с таким slug уже существует");
-  }
+  const slug = await uniquePostSlug(data.slug || data.title);
 
   const categoryIds = await upsertCategories(parseCommaList(data.categories));
   const tagIds = await upsertTags(parseCommaList(data.tags));

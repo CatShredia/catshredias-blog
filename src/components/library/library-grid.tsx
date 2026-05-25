@@ -1,12 +1,14 @@
 "use client";
 
-import Image from "next/image";
+import { SafeImage } from "@/components/ui/safe-image";
 import { BookStatus } from "@prisma/client";
 import { useMemo, useState } from "react";
 
+import { StarRatingDisplay } from "@/components/ui/star-rating";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { BookListItem } from "@/lib/queries/books";
+import { formatDateRu } from "@/lib/dates";
 import { BOOK_STATUS_LABELS } from "@/lib/validations/book";
 
 export function LibraryGrid({
@@ -78,12 +80,10 @@ export function LibraryGrid({
               <Card href={`/library/${book.slug}`}>
                 {book.coverImage ? (
                   <div className="relative mb-3 h-40 w-full overflow-hidden rounded-lg">
-                    <Image
+                    <SafeImage
                       src={book.coverImage}
                       alt=""
                       fill
-                      className="object-cover"
-                      unoptimized
                     />
                   </div>
                 ) : null}
@@ -92,8 +92,15 @@ export function LibraryGrid({
                 {book.author ? (
                   <p className="text-sm text-muted">{book.author}</p>
                 ) : null}
+                {book.readAt ? (
+                  <p className="mt-1 text-xs text-muted">
+                    Прочитано: {formatDateRu(book.readAt)}
+                  </p>
+                ) : null}
                 {book.rating ? (
-                  <p className="mt-2 text-sm">{"★".repeat(book.rating)}</p>
+                  <p className="mt-2">
+                    <StarRatingDisplay value={book.rating} />
+                  </p>
                 ) : null}
                 <div className="mt-3 flex flex-wrap gap-1">
                   {book.tags.map((t) => (

@@ -135,6 +135,7 @@ model Book {
   coverImage  String?
   status      BookStatus @default(PLANNED)
   rating      Int?
+  readAt      DateTime?
   tags        BookTag[]
   reviewPost  Post?
   createdAt   DateTime   @default(now())

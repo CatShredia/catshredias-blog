@@ -1,14 +1,16 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
+
+import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
+import { SafeImage } from "@/components/ui/safe-image";
 
 type ImageUploadFieldProps = {
   name: string;
   label: string;
   value?: string;
   onChange: (url: string) => void;
-  aspect?: "square" | "wide";
+  aspect?: "square" | "wide" | "free";
 };
 
 export function ImageUploadField({
@@ -20,6 +22,10 @@ export function ImageUploadField({
 }: ImageUploadFieldProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+
+  const cropAspect =
+    aspect === "square" ? 1 : aspect === "wide" ? 16 / 9 : undefined;
 
   async function upload(file: File) {
     setUploading(true);
@@ -43,6 +49,25 @@ export function ImageUploadField({
     onChange(data.url);
   }
 
+  function openCrop(file: File) {
+    const url = URL.createObjectURL(file);
+    setCropSrc(url);
+  }
+
+  function closeCrop() {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+  }
+
+  function handleFile(file: File | undefined) {
+    if (!file) return;
+    if (file.type.startsWith("image/")) {
+      openCrop(file);
+      return;
+    }
+    void upload(file);
+  }
+
   const previewClass =
     aspect === "square" ? "h-24 w-24" : "h-32 w-full max-w-md";
 
@@ -52,13 +77,7 @@ export function ImageUploadField({
       <input type="hidden" name={name} value={value} />
       {value ? (
         <div className={`relative overflow-hidden rounded-lg border border-border ${previewClass}`}>
-          <Image
-            src={value}
-            alt=""
-            fill
-            className="object-cover"
-            unoptimized
-          />
+          <SafeImage src={value} alt="" fill />
         </div>
       ) : null}
       <div className="flex flex-wrap items-center gap-2">
@@ -69,8 +88,8 @@ export function ImageUploadField({
             accept="image/*"
             className="sr-only"
             onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void upload(file);
+              handleFile(event.target.files?.[0]);
+              event.target.value = "";
             }}
           />
         </label>
@@ -92,6 +111,18 @@ export function ImageUploadField({
         className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
       />
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
+
+      {cropSrc ? (
+        <ImageCropDialog
+          imageSrc={cropSrc}
+          aspect={cropAspect}
+          onCancel={closeCrop}
+          onComplete={(file) => {
+            closeCrop();
+            void upload(file);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
