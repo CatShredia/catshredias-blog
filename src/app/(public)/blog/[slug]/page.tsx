@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { CommentSection } from "@/components/blog/comment-section";
+import { CommentSection, type CommentItem } from "@/components/blog/comment-section";
 import { PostArticleLayout } from "@/components/blog/post-article-layout";
 import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
 import { SafeImage } from "@/components/ui/safe-image";
+import type { CommentTreeNode } from "@/lib/comments-tree";
 import { listApprovedComments } from "@/lib/queries/comments";
 import {
   getPublishedPostBySlug,
@@ -16,6 +17,17 @@ import { articleJsonLd, siteUrl } from "@/lib/seo";
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
+
+function mapCommentToItem(node: CommentTreeNode): CommentItem {
+  return {
+    id: node.id,
+    authorName: node.authorName,
+    authorImage: node.authorImage,
+    content: node.content,
+    createdAt: node.createdAt,
+    replies: node.replies.map(mapCommentToItem),
+  };
+}
 
 export const revalidate = 60;
 export const dynamic = "force-dynamic";
@@ -95,21 +107,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       <CommentSection
         postId={post.id}
         postSlug={post.slug}
-        initialComments={comments.map((comment) => ({
-          id: comment.id,
-          authorName: comment.user?.name ?? comment.authorName,
-          authorImage: comment.user?.image,
-          content: comment.content,
-          createdAt: comment.createdAt,
-          replies: comment.replies.map((reply) => ({
-            id: reply.id,
-            authorName: reply.user?.name ?? reply.authorName,
-            authorImage: reply.user?.image,
-            content: reply.content,
-            createdAt: reply.createdAt,
-            replies: [],
-          })),
-        }))}
+        initialComments={comments.map(mapCommentToItem)}
       />
     </Container>
   );

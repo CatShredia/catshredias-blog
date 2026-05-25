@@ -119,9 +119,6 @@ model Project {
   roles       String[]
   repoUrl     String?
   demoUrl     String?
-  hhUrl       String?
-  resumePdf   String?
-  screenshots String[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 
+import { MAX_COMMENT_DEPTH } from "@/lib/comments-tree";
 import { formatDateRu, toIsoString } from "@/lib/dates";
 
 export type CommentItem = {
@@ -17,6 +18,25 @@ export type CommentItem = {
   createdAt: Date | string;
   replies: CommentItem[];
 };
+
+function addReplyToTree(
+  comments: CommentItem[],
+  parentId: string,
+  reply: CommentItem,
+): CommentItem[] {
+  return comments.map((comment) => {
+    if (comment.id === parentId) {
+      return { ...comment, replies: [...comment.replies, reply] };
+    }
+    if (comment.replies.length > 0) {
+      return {
+        ...comment,
+        replies: addReplyToTree(comment.replies, parentId, reply),
+      };
+    }
+    return comment;
+  });
+}
 
 export function CommentSection({
   postId,
@@ -41,6 +61,33 @@ export function CommentSection({
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [reportReason, setReportReason] = useState("");
 
+  async function submitComment(payload: {
+    content: string;
+    parentId?: string;
+    turnstileToken?: string;
+  }) {
+    const response = await fetch("/api/comments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        postId,
+        content: payload.content,
+        parentId: payload.parentId,
+        turnstileToken: payload.turnstileToken,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string };
+      throw new Error(data.error ?? "Ошибка отправки");
+    }
+
+    return (await response.json()) as {
+      comment: CommentItem;
+      message: string;
+    };
+  }
+
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!session?.user) return;
@@ -48,30 +95,20 @@ export function CommentSection({
     setSubmitting(true);
     setStatusMessage(null);
 
-    const response = await fetch("/api/comments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ postId, content, turnstileToken }),
-    });
-
-    setSubmitting(false);
-
-    if (!response.ok) {
-      const data = (await response.json()) as { error?: string };
-      setStatusMessage(data.error ?? "Ошибка отправки");
-      return;
+    try {
+      const data = await submitComment({ content, turnstileToken });
+      setComments((prev) => [...prev, data.comment]);
+      setContent("");
+      setTurnstileToken(undefined);
+      setStatusMessage(data.message);
+      router.refresh();
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error ? error.message : "Ошибка отправки",
+      );
+    } finally {
+      setSubmitting(false);
     }
-
-    const data = (await response.json()) as {
-      comment: CommentItem;
-      message: string;
-    };
-
-    setComments((prev) => [...prev, data.comment]);
-    setContent("");
-    setTurnstileToken(undefined);
-    setStatusMessage(data.message);
-    router.refresh();
   }
 
   async function submitReport(commentId: string) {
@@ -101,12 +138,14 @@ export function CommentSection({
       {comments.length === 0 ? (
         <p className="mt-4 text-sm text-muted">Пока нет комментариев.</p>
       ) : (
-        <ul className="mt-6 space-y-6">
+        <ul className="mt-6 space-y-4">
           {comments.map((comment) => (
-            <CommentCard
+            <CommentThread
               key={comment.id}
               comment={comment}
+              depth={1}
               isLoggedIn={!!session?.user}
+              siteKey={siteKey}
               reportingId={reportingId}
               reportReason={reportReason}
               onReportOpen={(id) => {
@@ -115,7 +154,19 @@ export function CommentSection({
               }}
               onReportCancel={() => setReportingId(null)}
               onReportReasonChange={setReportReason}
-              onReportSubmit={() => void submitReport(comment.id)}
+              onReportSubmit={submitReport}
+              onReply={async (parentId, replyContent, token) => {
+                const data = await submitComment({
+                  content: replyContent,
+                  parentId,
+                  turnstileToken: token,
+                });
+                setComments((prev) =>
+                  addReplyToTree(prev, parentId, data.comment),
+                );
+                setStatusMessage(data.message);
+                router.refresh();
+              }}
             />
           ))}
         </ul>
@@ -168,7 +219,10 @@ export function CommentSection({
               >
                 Войти
               </Link>
-              <Link href={registerHref} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm">
+              <Link
+                href={registerHref}
+                className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm"
+              >
                 Регистрация
               </Link>
             </div>
@@ -184,87 +238,245 @@ export function CommentSection({
   );
 }
 
-function CommentCard({
+function CommentThread({
   comment,
+  depth,
   isLoggedIn,
+  siteKey,
   reportingId,
   reportReason,
   onReportOpen,
   onReportCancel,
   onReportReasonChange,
   onReportSubmit,
+  onReply,
 }: {
   comment: CommentItem;
+  depth: number;
   isLoggedIn: boolean;
+  siteKey?: string;
   reportingId: string | null;
   reportReason: string;
   onReportOpen: (id: string) => void;
   onReportCancel: () => void;
   onReportReasonChange: (v: string) => void;
-  onReportSubmit: () => void;
+  onReportSubmit: (id: string) => void | Promise<void>;
+  onReply: (
+    parentId: string,
+    content: string,
+    turnstileToken?: string,
+  ) => Promise<void>;
 }) {
+  const canReply = isLoggedIn && depth < MAX_COMMENT_DEPTH;
+  const nestStyles = [
+    "",
+    "ml-3 border-l-2 border-accent/25 pl-4 sm:ml-4",
+    "ml-3 border-l-2 border-border pl-4 sm:ml-3",
+    "ml-3 border-l-2 border-border/80 pl-4 sm:ml-3",
+    "ml-3 border-l border-border/60 pl-3 sm:ml-2",
+    "ml-2 border-l border-dashed border-border/50 pl-3 sm:ml-2",
+  ];
+  const cardStyles = [
+    "rounded-xl border border-border bg-card p-4 shadow-sm",
+    "rounded-lg border border-border/90 bg-card/95 p-3",
+    "rounded-lg border border-border/80 bg-background p-3",
+    "rounded-md border border-border/70 bg-background p-3",
+    "rounded-md bg-card/50 p-2.5",
+    "rounded-md bg-card/30 p-2.5",
+  ];
+  const styleIndex = Math.min(depth - 1, nestStyles.length - 1);
+  const avatarSize =
+    depth === 1 ? "h-10 w-10 text-sm" : depth === 2 ? "h-9 w-9 text-xs" : "h-8 w-8 text-xs";
+
   return (
-    <li className="rounded-lg border border-border p-4">
-      <div className="flex items-start gap-3">
-        {comment.authorImage ? (
-          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full">
-            <SafeImage src={comment.authorImage} alt="" fill />
-          </div>
-        ) : (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card text-sm font-medium">
-            {comment.authorName.charAt(0).toUpperCase()}
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="font-medium">{comment.authorName}</p>
-          <time dateTime={toIsoString(comment.createdAt)} className="text-xs text-muted">
-            {formatDateRu(comment.createdAt)}
-          </time>
-          <p className="mt-2 text-sm leading-relaxed">{comment.content}</p>
-          {isLoggedIn ? (
-            <button
-              type="button"
-              className="mt-2 text-xs text-muted underline-offset-4 hover:underline"
-              onClick={() => onReportOpen(comment.id)}
+    <li className={depth > 1 ? nestStyles[styleIndex] : undefined}>
+      <article className={cardStyles[styleIndex]}>
+        <div className="flex items-start gap-3">
+          {comment.authorImage ? (
+            <div
+              className={`relative ${avatarSize} shrink-0 overflow-hidden rounded-full ring-2 ring-background`}
             >
-              Пожаловаться
-            </button>
-          ) : null}
-          {reportingId === comment.id ? (
-            <div className="mt-3 space-y-2 rounded-lg border border-border bg-background p-3">
-              <textarea
-                rows={2}
-                placeholder="Причина жалобы"
-                value={reportReason}
-                onChange={(e) => onReportReasonChange(e.target.value)}
-                className="w-full rounded border border-border bg-card px-2 py-1 text-sm"
-              />
-              <div className="flex gap-2">
+              <SafeImage src={comment.authorImage} alt="" fill />
+            </div>
+          ) : (
+            <div
+              className={`flex ${avatarSize} shrink-0 items-center justify-center rounded-full bg-accent/15 font-medium text-accent`}
+            >
+              {comment.authorName.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <p className="font-medium">{comment.authorName}</p>
+            </div>
+            <time
+              dateTime={toIsoString(comment.createdAt)}
+              className="text-xs text-muted"
+            >
+              {formatDateRu(comment.createdAt)}
+            </time>
+            <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap">
+              {comment.content}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              {isLoggedIn ? (
                 <button
                   type="button"
-                  onClick={onReportSubmit}
-                  className="rounded bg-accent px-3 py-1 text-xs text-accent-foreground"
+                  className="text-xs text-muted underline-offset-4 hover:underline"
+                  onClick={() => onReportOpen(comment.id)}
                 >
-                  Отправить
+                  Пожаловаться
                 </button>
-                <button type="button" onClick={onReportCancel} className="text-xs text-muted">
-                  Отмена
-                </button>
-              </div>
+              ) : null}
             </div>
-          ) : null}
+            {canReply ? (
+              <ReplyForm
+                parentId={comment.id}
+                siteKey={siteKey}
+                onSubmit={onReply}
+              />
+            ) : null}
+            {reportingId === comment.id ? (
+              <div className="mt-3 space-y-2 rounded-lg border border-border bg-background p-3">
+                <textarea
+                  rows={2}
+                  placeholder="Причина жалобы"
+                  value={reportReason}
+                  onChange={(e) => onReportReasonChange(e.target.value)}
+                  className="w-full rounded border border-border bg-card px-2 py-1 text-sm"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void onReportSubmit(comment.id)}
+                    className="rounded bg-accent px-3 py-1 text-xs text-accent-foreground"
+                  >
+                    Отправить
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onReportCancel}
+                    className="text-xs text-muted"
+                  >
+                    Отмена
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
+      </article>
+
       {comment.replies.length > 0 ? (
-        <ul className="mt-4 space-y-3 border-l-2 border-border pl-4">
+        <ul className="mt-3 space-y-3">
           {comment.replies.map((reply) => (
-            <li key={reply.id}>
-              <p className="text-sm font-medium">{reply.authorName}</p>
-              <p className="text-sm text-muted">{reply.content}</p>
-            </li>
+            <CommentThread
+              key={reply.id}
+              comment={reply}
+              depth={depth + 1}
+              isLoggedIn={isLoggedIn}
+              siteKey={siteKey}
+              reportingId={reportingId}
+              reportReason={reportReason}
+              onReportOpen={onReportOpen}
+              onReportCancel={onReportCancel}
+              onReportReasonChange={onReportReasonChange}
+              onReportSubmit={onReportSubmit}
+              onReply={onReply}
+            />
           ))}
         </ul>
       ) : null}
     </li>
+  );
+}
+
+function ReplyForm({
+  parentId,
+  siteKey,
+  onSubmit,
+}: {
+  parentId: string;
+  siteKey?: string;
+  onSubmit: (
+    parentId: string,
+    content: string,
+    turnstileToken?: string,
+  ) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [content, setContent] = useState("");
+  const [token, setToken] = useState<string>();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className="text-xs font-medium text-accent hover:underline"
+        onClick={() => setOpen(true)}
+      >
+        Ответить
+      </button>
+    );
+  }
+
+  return (
+    <form
+      className="mt-3 w-full space-y-2 rounded-lg border border-border/80 bg-background p-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        setSubmitting(true);
+        setError(null);
+        void onSubmit(parentId, content, token)
+          .then(() => {
+            setContent("");
+            setToken(undefined);
+            setOpen(false);
+          })
+          .catch((err: unknown) => {
+            setError(err instanceof Error ? err.message : "Ошибка отправки");
+          })
+          .finally(() => setSubmitting(false));
+      }}
+    >
+      <textarea
+        required
+        rows={3}
+        placeholder="Ваш ответ"
+        value={content}
+        onChange={(event) => setContent(event.target.value)}
+        className="w-full rounded-lg border border-border bg-card px-2 py-1.5 text-sm"
+      />
+      {siteKey ? (
+        <Turnstile
+          siteKey={siteKey}
+          onSuccess={setToken}
+          onExpire={() => setToken(undefined)}
+        />
+      ) : null}
+      {error ? <p className="text-xs text-red-600">{error}</p> : null}
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground disabled:opacity-60"
+        >
+          {submitting ? "Отправка…" : "Отправить ответ"}
+        </button>
+        <button
+          type="button"
+          className="text-xs text-muted"
+          onClick={() => {
+            setOpen(false);
+            setContent("");
+            setError(null);
+          }}
+        >
+          Отмена
+        </button>
+      </div>
+    </form>
   );
 }

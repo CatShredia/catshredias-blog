@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { MarkdownContent } from "@/components/markdown/markdown-content";
-import { PdfViewer } from "@/components/portfolio/pdf-viewer";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -74,11 +73,6 @@ export default async function ProjectPage({ params }: PageProps) {
               GitHub
             </ButtonLink>
           ) : null}
-          {project.hhUrl ? (
-            <ButtonLink href={project.hhUrl} variant="ghost">
-              Профиль на hh.ru
-            </ButtonLink>
-          ) : null}
         </div>
       </header>
 
@@ -97,12 +91,6 @@ export default async function ProjectPage({ params }: PageProps) {
           <MarkdownContent content={project.result} />
         </div>
       </Section>
-
-      {project.resumePdf ? (
-        <Section title="Резюме (PDF)">
-          <PdfViewer url={project.resumePdf} />
-        </Section>
-      ) : null}
     </Container>
   );
 }

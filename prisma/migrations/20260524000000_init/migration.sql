@@ -97,9 +97,6 @@ CREATE TABLE "Project" (
     "roles" TEXT[],
     "repoUrl" TEXT,
     "demoUrl" TEXT,
-    "hhUrl" TEXT,
-    "resumePdf" TEXT,
-    "screenshots" TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

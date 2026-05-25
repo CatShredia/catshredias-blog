@@ -99,15 +99,6 @@ async function main() {
         roles: project.roles,
         repoUrl: project.repoUrl ?? null,
         demoUrl: project.demoUrl ?? null,
-        hhUrl:
-          project.slug === "portfolio-site"
-            ? "https://hh.ru"
-            : (project.hhUrl ?? null),
-        resumePdf:
-          project.slug === "portfolio-site"
-            ? "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-            : null,
-        screenshots: [],
       },
       create: {
         title: project.title,
@@ -120,15 +111,6 @@ async function main() {
         roles: project.roles,
         repoUrl: project.repoUrl ?? null,
         demoUrl: project.demoUrl ?? null,
-        hhUrl:
-          project.slug === "portfolio-site"
-            ? "https://hh.ru"
-            : (project.hhUrl ?? null),
-        resumePdf:
-          project.slug === "portfolio-site"
-            ? "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-            : null,
-        screenshots: [],
       },
     });
   }

@@ -24,9 +24,6 @@ function parseFormData(formData: FormData) {
     roles: formData.get("roles"),
     repoUrl: formData.get("repoUrl") || "",
     demoUrl: formData.get("demoUrl") || "",
-    hhUrl: formData.get("hhUrl") || "",
-    resumePdf: formData.get("resumePdf") || undefined,
-    screenshots: formData.get("screenshots") || undefined,
   });
 }
 
@@ -55,9 +52,6 @@ export async function createProjectAction(formData: FormData) {
       roles: parseCommaList(data.roles),
       repoUrl: emptyToNull(data.repoUrl),
       demoUrl: emptyToNull(data.demoUrl),
-      hhUrl: emptyToNull(data.hhUrl),
-      resumePdf: emptyToNull(data.resumePdf),
-      screenshots: parseCommaList(data.screenshots),
     },
   });
 
@@ -91,9 +85,6 @@ export async function updateProjectAction(id: string, formData: FormData) {
       roles: parseCommaList(data.roles),
       repoUrl: emptyToNull(data.repoUrl),
       demoUrl: emptyToNull(data.demoUrl),
-      hhUrl: emptyToNull(data.hhUrl),
-      resumePdf: emptyToNull(data.resumePdf),
-      screenshots: parseCommaList(data.screenshots),
     },
   });
 

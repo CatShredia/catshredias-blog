@@ -1,6 +1,57 @@
 import { CommentStatus, ReportStatus } from "@prisma/client";
 
+import {
+  buildCommentTree,
+  canReplyToDepth,
+  getCommentDepth,
+  MAX_COMMENT_DEPTH,
+} from "@/lib/comments-tree";
 import { prisma } from "@/lib/prisma";
+
+function mapCommentRow(comment: {
+  id: string;
+  parentId: string | null;
+  authorName: string;
+  content: string;
+  createdAt: Date;
+  user: { name: string | null; image: string | null } | null;
+}) {
+  return {
+    id: comment.id,
+    parentId: comment.parentId,
+    authorName: comment.user?.name ?? comment.authorName,
+    authorImage: comment.user?.image ?? null,
+    content: comment.content,
+    createdAt: comment.createdAt,
+  };
+}
+
+export async function validateCommentParent(postId: string, parentId?: string) {
+  if (!parentId) return;
+
+  const parent = await prisma.comment.findFirst({
+    where: { id: parentId, postId, status: CommentStatus.APPROVED },
+    select: { id: true, parentId: true },
+  });
+
+  if (!parent) {
+    throw new Error("Родительский комментарий не найден");
+  }
+
+  const chain = await prisma.comment.findMany({
+    where: { postId, status: CommentStatus.APPROVED },
+    select: { id: true, parentId: true },
+  });
+
+  const parentById = new Map(chain.map((row) => [row.id, row.parentId]));
+  const parentDepth = getCommentDepth(parent.id, parentById);
+
+  if (!canReplyToDepth(parentDepth)) {
+    throw new Error(
+      `Достигнут максимальный уровень вложенности ответов (${MAX_COMMENT_DEPTH})`,
+    );
+  }
+}
 
 export async function createComment(data: {
   postId: string;
@@ -10,6 +61,8 @@ export async function createComment(data: {
   userId?: string;
   parentId?: string;
 }) {
+  await validateCommentParent(data.postId, data.parentId);
+
   return prisma.comment.create({
     data: {
       ...data,
@@ -23,22 +76,13 @@ export async function createComment(data: {
 }
 
 export async function listApprovedComments(postId: string) {
-  return prisma.comment.findMany({
-    where: {
-      postId,
-      status: CommentStatus.APPROVED,
-      parentId: null,
-    },
+  const rows = await prisma.comment.findMany({
+    where: { postId, status: CommentStatus.APPROVED },
     orderBy: { createdAt: "asc" },
-    include: {
-      user: { select: { name: true, image: true } },
-      replies: {
-        where: { status: CommentStatus.APPROVED },
-        orderBy: { createdAt: "asc" },
-        include: { user: { select: { name: true, image: true } } },
-      },
-    },
+    include: { user: { select: { name: true, image: true } } },
   });
+
+  return buildCommentTree(rows.map(mapCommentRow));
 }
 
 export async function listAdminComments() {

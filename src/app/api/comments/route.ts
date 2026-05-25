@@ -77,8 +77,16 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
   } catch (error) {
-    if (error instanceof Error && error.message.includes("жалобу")) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error instanceof Error) {
+      if (error.message.includes("жалобу")) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      if (
+        error.message.includes("вложенности") ||
+        error.message.includes("Родительский")
+      ) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
     }
     logger.error("POST /api/comments failed", {
       error: error instanceof Error ? error.message : "unknown",

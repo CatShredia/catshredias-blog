@@ -6,7 +6,6 @@ export type MockProject = {
   roles: string[];
   repoUrl?: string;
   demoUrl?: string;
-  hhUrl?: string;
   problem: string;
   solution: string;
   result: string;

@@ -11,9 +11,6 @@ const projectListSelect = {
   roles: true,
   repoUrl: true,
   demoUrl: true,
-  hhUrl: true,
-  resumePdf: true,
-  screenshots: true,
 } satisfies Prisma.ProjectSelect;
 
 export type ProjectListItem = Prisma.ProjectGetPayload<{
