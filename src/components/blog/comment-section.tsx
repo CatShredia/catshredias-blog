@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { useState } from "react";
 
 import { MAX_COMMENT_DEPTH } from "@/lib/comments-tree";
+import { DELETED_USER_DISPLAY_NAME } from "@/lib/deleted-user";
 import { formatDateRu, toIsoString } from "@/lib/dates";
 
 export type CommentItem = {
@@ -238,6 +239,51 @@ export function CommentSection({
   );
 }
 
+function CommentAvatar({
+  authorName,
+  authorImage,
+  sizeClass,
+}: {
+  authorName: string;
+  authorImage?: string | null;
+  sizeClass: string;
+}) {
+  const isDeleted = authorName === DELETED_USER_DISPLAY_NAME;
+
+  if (!isDeleted && authorImage) {
+    return (
+      <div
+        className={`relative ${sizeClass} shrink-0 overflow-hidden rounded-full ring-2 ring-background`}
+      >
+        <SafeImage src={authorImage} alt="" fill />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex ${sizeClass} shrink-0 items-center justify-center rounded-full ring-2 ring-background ${
+        isDeleted
+          ? "bg-muted text-muted"
+          : "bg-accent/15 font-medium text-accent"
+      }`}
+      aria-hidden
+    >
+      {isDeleted ? (
+        <svg
+          viewBox="0 0 24 24"
+          className="h-1/2 w-1/2 opacity-70"
+          fill="currentColor"
+        >
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+        </svg>
+      ) : (
+        authorName.charAt(0).toUpperCase()
+      )}
+    </div>
+  );
+}
+
 function CommentThread({
   comment,
   depth,
@@ -292,22 +338,22 @@ function CommentThread({
     <li className={depth > 1 ? nestStyles[styleIndex] : undefined}>
       <article className={cardStyles[styleIndex]}>
         <div className="flex items-start gap-3">
-          {comment.authorImage ? (
-            <div
-              className={`relative ${avatarSize} shrink-0 overflow-hidden rounded-full ring-2 ring-background`}
-            >
-              <SafeImage src={comment.authorImage} alt="" fill />
-            </div>
-          ) : (
-            <div
-              className={`flex ${avatarSize} shrink-0 items-center justify-center rounded-full bg-accent/15 font-medium text-accent`}
-            >
-              {comment.authorName.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <CommentAvatar
+            authorName={comment.authorName}
+            authorImage={comment.authorImage}
+            sizeClass={avatarSize}
+          />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <p className="font-medium">{comment.authorName}</p>
+              <p
+              className={`font-medium ${
+                comment.authorName === DELETED_USER_DISPLAY_NAME
+                  ? "text-muted italic"
+                  : ""
+              }`}
+            >
+              {comment.authorName}
+            </p>
             </div>
             <time
               dateTime={toIsoString(comment.createdAt)}

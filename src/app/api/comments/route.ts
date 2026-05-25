@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { mapCommentAuthor } from "@/lib/deleted-user";
 import { resolveSessionDbUser } from "@/lib/auth-helpers";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -56,6 +57,8 @@ export async function POST(request: NextRequest) {
       parentId: body.parentId,
     });
 
+    const author = mapCommentAuthor(comment.user, comment.authorName);
+
     logger.info("Comment created", {
       commentId: comment.id,
       postId: post.id,
@@ -66,8 +69,8 @@ export async function POST(request: NextRequest) {
       {
         comment: {
           id: comment.id,
-          authorName: comment.user?.name ?? comment.authorName,
-          authorImage: comment.user?.image,
+          authorName: author.authorName,
+          authorImage: author.authorImage,
           content: comment.content,
           createdAt: comment.createdAt.toISOString(),
           replies: [],

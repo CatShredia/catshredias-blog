@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { DeleteAccountSection } from "@/components/auth/delete-account-section";
 import { ProfileForm } from "@/components/auth/profile-form";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -22,8 +23,12 @@ export default async function ProfilePage() {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, image: true },
+    select: { name: true, image: true, deletedAt: true, role: true },
   });
+
+  if (!dbUser || dbUser.deletedAt) {
+    redirect("/login?callbackUrl=/profile");
+  }
 
   return (
     <Container>
@@ -36,14 +41,16 @@ export default async function ProfilePage() {
             name={dbUser?.name ?? session.user.name ?? ""}
             image={dbUser?.image ?? session.user.image ?? ""}
           />
-          {isAdminRole(session.user.role) ? (
+          {isAdminRole(dbUser.role) ? (
             <div className="mt-8 border-t border-border pt-8">
               <h2 className="text-sm font-medium">Администрирование</h2>
               <ButtonLink href="/admin" variant="secondary" className="mt-3">
                 Админка
               </ButtonLink>
             </div>
-          ) : null}
+          ) : (
+            <DeleteAccountSection />
+          )}
         </div>
       </Section>
     </Container>

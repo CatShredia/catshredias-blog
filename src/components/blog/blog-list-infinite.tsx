@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { PostTaxonomyBadges } from "@/components/blog/post-taxonomy-badges";
 import { formatDateRu, toIsoString } from "@/lib/dates";
 import type { PostListItem } from "@/lib/queries/posts";
 
@@ -187,10 +187,11 @@ export function BlogListInfinite({
                 </time>
                 <h2 className="mt-2 text-xl font-semibold">{post.title}</h2>
                 <p className="mt-2 text-sm text-muted">{post.excerpt}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {post.tags.map((tag) => (
-                    <Badge key={tag.slug}>{tag.name}</Badge>
-                  ))}
+                <div className="mt-3">
+                  <PostTaxonomyBadges
+                    categories={post.categories}
+                    tags={post.tags}
+                  />
                 </div>
               </Card>
             </li>

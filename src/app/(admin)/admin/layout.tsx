@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminFooter } from "@/components/admin/admin-footer";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { Container } from "@/components/ui/container";
 import { auth } from "@/lib/auth";
@@ -12,7 +13,7 @@ export default async function AdminLayout({
   const session = await auth();
 
   return (
-    <div className="min-h-full bg-background">
+    <div className="flex min-h-full flex-col bg-background">
       {session?.user ? (
         <header className="border-b border-border">
           <Container className="flex min-h-14 items-center justify-between">
@@ -23,7 +24,8 @@ export default async function AdminLayout({
           </Container>
         </header>
       ) : null}
-      {children}
+      <div className="flex-1">{children}</div>
+      <AdminFooter />
     </div>
   );
 }

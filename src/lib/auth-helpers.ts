@@ -20,7 +20,7 @@ export async function resolveSessionDbUser(): Promise<SessionDbUser | null> {
   if (!session?.user?.email) return null;
 
   const dbUser = await prisma.user.findUnique({
-    where: { email: session.user.email.toLowerCase() },
+    where: { email: session.user.email.toLowerCase(), deletedAt: null },
     select: { id: true, email: true, name: true, image: true, role: true },
   });
 

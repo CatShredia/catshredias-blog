@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { CommentSection, type CommentItem } from "@/components/blog/comment-section";
 import { PostArticleLayout } from "@/components/blog/post-article-layout";
-import { Badge } from "@/components/ui/badge";
+import { PostTaxonomyBadges } from "@/components/blog/post-taxonomy-badges";
 import { Container } from "@/components/ui/container";
 import { SafeImage } from "@/components/ui/safe-image";
 import type { CommentTreeNode } from "@/lib/comments-tree";
@@ -96,10 +96,11 @@ export default async function BlogPostPage({ params }: PageProps) {
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
             {post.title}
           </h1>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {post.tags.map((tag) => (
-              <Badge key={tag.slug}>{tag.name}</Badge>
-            ))}
+          <div className="mt-4">
+            <PostTaxonomyBadges
+              categories={post.categories}
+              tags={post.tags}
+            />
           </div>
         </PostArticleLayout>
       </article>

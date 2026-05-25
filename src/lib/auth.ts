@@ -31,7 +31,7 @@ const providers: Provider[] = [
       const user = await prisma.user.findUnique({
         where: { email },
       });
-      if (!user?.passwordHash) return null;
+      if (!user?.passwordHash || user.deletedAt) return null;
 
       const valid = await compare(parsed.data.password, user.passwordHash);
       if (!valid) return null;
@@ -121,8 +121,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if ("role" in user && user.role) {
           token.role = user.role;
         } else if (user.email) {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: user.email.toLowerCase() },
+          const           dbUser = await prisma.user.findUnique({
+            where: { email: user.email.toLowerCase(), deletedAt: null },
             select: { id: true, role: true, name: true, image: true },
           });
           if (dbUser) {
@@ -139,13 +139,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Only on explicit session update (Node.js), not in Edge middleware.
       if (trigger === "update" && token.sub) {
         let dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
+          where: { id: token.sub, deletedAt: null },
           select: { id: true, role: true, name: true, image: true },
         });
 
         if (!dbUser && token.email) {
           dbUser = await prisma.user.findUnique({
-            where: { email: String(token.email).toLowerCase() },
+            where: { email: String(token.email).toLowerCase(), deletedAt: null },
             select: { id: true, role: true, name: true, image: true },
           });
           if (dbUser) {

@@ -6,6 +6,7 @@ import {
   getCommentDepth,
   MAX_COMMENT_DEPTH,
 } from "@/lib/comments-tree";
+import { mapCommentAuthor } from "@/lib/deleted-user";
 import { prisma } from "@/lib/prisma";
 
 function mapCommentRow(comment: {
@@ -14,13 +15,18 @@ function mapCommentRow(comment: {
   authorName: string;
   content: string;
   createdAt: Date;
-  user: { name: string | null; image: string | null } | null;
+  user: {
+    name: string | null;
+    image: string | null;
+    deletedAt: Date | null;
+  } | null;
 }) {
+  const author = mapCommentAuthor(comment.user, comment.authorName);
   return {
     id: comment.id,
     parentId: comment.parentId,
-    authorName: comment.user?.name ?? comment.authorName,
-    authorImage: comment.user?.image ?? null,
+    authorName: author.authorName,
+    authorImage: author.authorImage,
     content: comment.content,
     createdAt: comment.createdAt,
   };
@@ -70,7 +76,7 @@ export async function createComment(data: {
       adminSeenAt: null,
     },
     include: {
-      user: { select: { name: true, image: true } },
+      user: { select: { name: true, image: true, deletedAt: true } },
     },
   });
 }
@@ -79,7 +85,7 @@ export async function listApprovedComments(postId: string) {
   const rows = await prisma.comment.findMany({
     where: { postId, status: CommentStatus.APPROVED },
     orderBy: { createdAt: "asc" },
-    include: { user: { select: { name: true, image: true } } },
+    include: { user: { select: { name: true, image: true, deletedAt: true } } },
   });
 
   return buildCommentTree(rows.map(mapCommentRow));
@@ -90,7 +96,7 @@ export async function listAdminComments() {
     orderBy: { createdAt: "desc" },
     include: {
       post: { select: { title: true, slug: true } },
-      user: { select: { name: true, email: true } },
+      user: { select: { name: true, email: true, deletedAt: true } },
       _count: { select: { reports: { where: { status: ReportStatus.PENDING } } } },
     },
     take: 200,

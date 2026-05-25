@@ -1,4 +1,5 @@
 import { SocialLinks } from "@/components/site/social-links";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Container } from "@/components/ui/container";
 import { siteProfile } from "@/data/mock/site";
 
@@ -9,7 +10,10 @@ export function SiteFooter() {
         <p>
           © {new Date().getFullYear()} {siteProfile.name}
         </p>
-        <SocialLinks />
+        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+          <ThemeToggle showLabel />
+          <SocialLinks />
+        </div>
       </Container>
     </footer>
   );

@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { formatDateRu } from "@/lib/dates";
+import { mapCommentAuthor } from "@/lib/deleted-user";
 import { countPendingReports, listAdminComments } from "@/lib/queries/comments";
 
 export default async function AdminCommentsPage() {
@@ -42,7 +43,9 @@ export default async function AdminCommentsPage() {
       </div>
 
       <ul className="mt-8 space-y-4">
-        {comments.map((comment) => (
+        {comments.map((comment) => {
+          const author = mapCommentAuthor(comment.user, comment.authorName);
+          return (
           <li
             key={comment.id}
             className={`rounded-xl border p-4 ${
@@ -54,7 +57,7 @@ export default async function AdminCommentsPage() {
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="font-medium">
-                  {comment.authorName}
+                  {author.authorName}
                   {!comment.adminSeenAt ? (
                     <span className="ml-2 rounded bg-accent px-1.5 py-0.5 text-xs text-accent-foreground">
                       новый
@@ -108,7 +111,8 @@ export default async function AdminCommentsPage() {
               </form>
             </div>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </Container>
   );

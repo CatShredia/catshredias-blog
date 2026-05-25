@@ -51,7 +51,7 @@ export async function registerUser(
     where: { email: parsed.data.email.toLowerCase() },
   });
   if (existing) {
-    return { error: "Пользователь с таким email уже зарегистрирован" };
+    return { error: "Пользователь с таким email уже зарегистрирован. Если вы хотите зарегистировать аккаунт на почту с удаленного аккаунта, напишите мне на почту catshredia.990@gmail.com" };
   }
 
   await prisma.user.create({

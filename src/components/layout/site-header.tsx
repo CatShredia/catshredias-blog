@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { AuthNav } from "@/components/layout/auth-nav";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Container } from "@/components/ui/container";
 
 const nav = [
@@ -34,7 +33,6 @@ export function SiteHeader() {
           </ul>
         </nav>
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <AuthNav />
         </div>
       </Container>

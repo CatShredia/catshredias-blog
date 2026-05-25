@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { auth } from "@/lib/auth";
+import { resolveSessionDbUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { saveUpload } from "@/lib/uploads";
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const dbUser = await resolveSessionDbUser();
+  if (!dbUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     const saved = await saveUpload(file);
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: dbUser.id },
       data: { image: saved.url },
     });
 
