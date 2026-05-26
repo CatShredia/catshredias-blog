@@ -11,6 +11,8 @@ const staticRoutes: MetadataRoute.Sitemap = [
   "/portfolio",
   "/contacts",
   "/library",
+  "/privacy",
+  "/personal-data-consent",
 ].map((path) => ({
   url: `${siteUrl}${path}`,
   lastModified: new Date(),

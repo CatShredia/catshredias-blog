@@ -5,6 +5,7 @@ import { useActionState } from "react";
 
 import { registerUser, type RegisterState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
+import { legalRoutes } from "@/lib/legal";
 
 const initialState: RegisterState = {};
 
@@ -82,6 +83,43 @@ export function RegisterForm({ callbackUrl }: { callbackUrl: string }) {
         {state.fieldErrors?.confirmPassword ? (
           <p className="mt-1 text-sm text-red-600">
             {state.fieldErrors.confirmPassword[0]}
+          </p>
+        ) : null}
+      </div>
+      <div>
+        <label className="flex cursor-pointer items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            name="consentAccepted"
+            value="on"
+            required
+            className="mt-1 size-4 shrink-0 rounded border-border"
+          />
+          <span className="text-muted">
+            Я ознакомился(лась) с{" "}
+            <Link
+              href={legalRoutes.privacy}
+              className="text-accent underline-offset-4 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Политикой конфиденциальности
+            </Link>{" "}
+            и даю{" "}
+            <Link
+              href={legalRoutes.personalDataConsent}
+              className="text-accent underline-offset-4 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              согласие на обработку персональных данных
+            </Link>
+            .
+          </span>
+        </label>
+        {state.fieldErrors?.consentAccepted ? (
+          <p className="mt-1 text-sm text-red-600">
+            {state.fieldErrors.consentAccepted[0]}
           </p>
         ) : null}
       </div>

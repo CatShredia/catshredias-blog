@@ -14,6 +14,9 @@ const registerSchema = z
     email: z.string().email("Некорректный email"),
     password: z.string().min(8, "Пароль: минимум 8 символов"),
     confirmPassword: z.string(),
+    consentAccepted: z.literal("on", {
+      error: "Необходимо согласие на обработку персональных данных",
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Пароли не совпадают",
@@ -41,6 +44,7 @@ export async function registerUser(
     email: formData.get("email"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
+    consentAccepted: formData.get("consentAccepted"),
   });
 
   if (!parsed.success) {

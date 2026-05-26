@@ -68,6 +68,8 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-portfolio_db}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@catshredia.ru}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
     command: npx prisma db seed
     profiles:
       - tools
