@@ -4,18 +4,20 @@ import { auth, signOut } from "@/lib/auth";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { listAdminPosts, listAdminProjects } from "@/lib/queries/admin";
+import { countUnreadNotifications } from "@/lib/notifications";
 import { countPendingReports, countUnseenComments } from "@/lib/queries/comments";
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminDashboardPage() {
   const session = await auth();
-  const [postsCount, projectsCount, booksCount, unseenComments, pendingReports] =
+  const [postsCount, projectsCount, booksCount, unseenComments, pendingReports, unreadNotifications] =
     await Promise.all([
       prisma.post.count(),
       listAdminProjects().then((items) => items.length),
       prisma.book.count(),
       countUnseenComments(),
       countPendingReports(),
+      countUnreadNotifications(),
     ]);
 
   const recentPosts = await listAdminPosts();
@@ -27,7 +29,7 @@ export default async function AdminDashboardPage() {
         Вы вошли как {session?.user?.email ?? "администратор"}.
       </p>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Link
           href="/admin/posts"
           className="rounded-xl border border-border bg-card p-5 hover:border-accent/40"
@@ -48,6 +50,13 @@ export default async function AdminDashboardPage() {
         >
           <p className="text-2xl font-bold">{projectsCount}</p>
           <p className="text-sm text-muted">Проектов</p>
+        </Link>
+        <Link
+          href="/admin/notifications"
+          className="rounded-xl border border-border bg-card p-5 hover:border-accent/40"
+        >
+          <p className="text-2xl font-bold">{unreadNotifications}</p>
+          <p className="text-sm text-muted">Уведомлений</p>
         </Link>
         <Link
           href="/admin/comments"

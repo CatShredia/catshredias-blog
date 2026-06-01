@@ -43,6 +43,20 @@ enum ReportStatus {
   DISMISSED
 }
 
+enum AdminNotificationType {
+  CONTACT
+  REPORT
+  COMMENT_INSTANT
+  COMMENT_DIGEST
+}
+
+enum NotifyMode {
+  INSTANT
+  DAILY
+  WEEKLY
+  OFF
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -206,12 +220,46 @@ model Tag {
 }
 
 model ContactMessage {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   email     String
-  message   String   @db.Text
+  message   String    @db.Text
   ip        String?
-  createdAt DateTime @default(now())
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model AdminNotification {
+  id        String                @id @default(cuid())
+  type      AdminNotificationType
+  title     String
+  body      String                @db.Text
+  href      String
+  entityId  String?
+  readAt    DateTime?
+  createdAt DateTime              @default(now())
+
+  @@index([readAt, createdAt])
+  @@index([type, createdAt])
+}
+
+model AdminNotificationSettings {
+  id                String     @id @default("default")
+  contactMode       NotifyMode @default(INSTANT)
+  reportMode        NotifyMode @default(INSTANT)
+  commentMode       NotifyMode @default(WEEKLY)
+  telegramEnabled   Boolean    @default(false)
+  telegramChatId    String?
+  telegramContact   Boolean    @default(true)
+  telegramReport    Boolean    @default(true)
+  telegramComments  Boolean    @default(true)
+  updatedAt         DateTime   @updatedAt
+}
+
+model NotificationDigestState {
+  id                  String    @id @default("default")
+  lastDailyDigestAt   DateTime?
+  lastWeeklyDigestAt  DateTime?
 }
 
 model SiteSettings {

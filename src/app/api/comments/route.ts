@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mapCommentAuthor } from "@/lib/deleted-user";
 import { resolveSessionDbUser } from "@/lib/auth-helpers";
 import { logger } from "@/lib/logger";
+import { notifyCommentInstant } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { createComment } from "@/lib/queries/comments";
 import { rateLimit } from "@/lib/rate-limit";
@@ -63,6 +64,12 @@ export async function POST(request: NextRequest) {
       commentId: comment.id,
       postId: post.id,
       userId: dbUser.id,
+    });
+
+    void notifyCommentInstant(comment.id).catch((err) => {
+      logger.error("Comment notification failed", {
+        error: err instanceof Error ? err.message : "unknown",
+      });
     });
 
     return NextResponse.json(

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 import { logger } from "@/lib/logger";
+import { notifyContactMessage } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRequestIp } from "@/lib/request-ip";
@@ -42,6 +43,12 @@ export async function POST(request: NextRequest) {
     logger.info("Contact message received", {
       id: message.id,
       email,
+    });
+
+    void notifyContactMessage(message).catch((err) => {
+      logger.error("Contact notification failed", {
+        error: err instanceof Error ? err.message : "unknown",
+      });
     });
 
     return NextResponse.json(

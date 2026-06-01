@@ -131,7 +131,8 @@ docker compose up -d --build
 | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`                   | нет         | OAuth GitHub                                                              |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`                   | нет         | OAuth Google                                                              |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | нет         | Turnstile для комментариев                                                |
-| `CRON_SECRET`                                             | нет         | Защита `POST /api/cron/publish-scheduled`                                 |
+| `CRON_SECRET`                                             | нет         | Защита cron (`publish-scheduled`, `notify-digest`)                        |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`                 | нет         | Уведомления админу в Telegram (`/admin/notifications`)                    |
 | `NPM_REGISTRY`                                            | нет         | npm registry для `docker compose build` на VPS (например GitVerse mirror) |
 | `UPLOAD_DIR`                                              | нет         | Каталог загрузок (по умолчанию `./uploads`)                               |
 
@@ -164,6 +165,7 @@ docker compose up -d --build
 - `/admin` — дашборд
 - `/admin/posts`, `/admin/projects`, `/admin/books`
 - `/admin/portfolio-settings` — hh.ru, PDF, «Ищу работу»
+- `/admin/notifications` — лента уведомлений и настройки (контакты, жалобы, комментарии)
 - `/admin/comments`, `/admin/reports`
 - `/admin/formatting` — справка по Markdown
 
@@ -181,6 +183,8 @@ docker compose up -d --build
 | POST  | `/api/admin/upload`                           | Загрузка файлов (admin)              |
 | GET   | `/api/uploads/[...path]`                      | Раздача загруженных файлов           |
 | POST  | `/api/cron/publish-scheduled`                 | Публикация отложенных постов         |
+| POST  | `/api/cron/notify-digest?period=weekly`       | Дайджест комментариев (cron)         |
+| POST  | `/api/cron/notify-digest?period=daily`        | Дайджест комментариев за сутки       |
 | GET   | `/api/health`                                 | Health check + проверка БД           |
 
 ## Структура проекта
@@ -261,18 +265,3 @@ Runews на том же сервере: [Coursework/docs/server-setup.md](../Cou
 ## Документация и ТЗ
 
 - ТЗ: `_docs/Техническое задание 23.05.docx` (текст: `_docs/_tz_extracted.txt`)
-
-## Статус по этапам ТЗ
-
-- **1** — каркас, Prisma, Auth.js, Docker
-- **2** — публичный UI, темы
-- **3** — CRUD админки, Markdown-редактор
-- **4** — блог: API, infinite scroll, SEO, фильтры
-- **5** — портфолио: кейсы, PDF, hh.ru
-- **6** — комментарии, Turnstile, модерация, жалобы
-- **7** — CI, тесты, логи, бэкапы, health
-- **8** — продакшен-деплой и финальная передача ([docs/deploy-vps.md](docs/deploy-vps.md))
-
-## Лицензия
-
-Приватный проект. Все права у владельца репозитория.

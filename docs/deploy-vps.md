@@ -496,7 +496,7 @@ location /_next/static/ {
 
 ---
 
-## 9. Cron: отложенные посты блога
+## 9. Cron: отложенные посты и уведомления
 
 На VPS (не Vercel Cron):
 
@@ -506,9 +506,24 @@ crontab -e
 
 ```cron
 */5 * * * * curl -fsS -X POST -H "Authorization: Bearer ВАШ_CRON_SECRET" https://catshredia.ru/api/cron/publish-scheduled >/dev/null 2>&1
+0 9 * * 1 curl -fsS -X POST -H "Authorization: Bearer ВАШ_CRON_SECRET" "https://catshredia.ru/api/cron/notify-digest?period=weekly" >/dev/null 2>&1
 ```
 
+- `publish-scheduled` — публикация отложенных постов (каждые 5 минут).
+- `notify-digest?period=weekly` — дайджест непросмотренных комментариев (по умолчанию в настройках «раз в неделю»; пример: понедельник 09:00). Для режима «раз в сутки» добавьте `period=daily`.
+
 `CRON_SECRET` задайте в `.env` catshredias-blog.
+
+### Telegram (опционально)
+
+В `.env`:
+
+```env
+TELEGRAM_BOT_TOKEN=123456:ABC...
+TELEGRAM_CHAT_ID=ваш_chat_id
+```
+
+Получить `chat_id`: напишите боту `/start`, затем `curl "https://api.telegram.org/bot<TOKEN>/getUpdates"`. Включение типов уведомлений — в админке `/admin/notifications`.
 
 ---
 
