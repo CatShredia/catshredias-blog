@@ -27,10 +27,8 @@ function coverFileFromPicture(
     : `image/${picture.format === "jpg" ? "jpeg" : picture.format || "jpeg"}`;
   const ext =
     mime.includes("png") ? ".png" : mime.includes("webp") ? ".webp" : ".jpg";
-  const bytes =
-    picture.data instanceof Uint8Array
-      ? picture.data
-      : new Uint8Array(picture.data);
+  // Копия в новый Uint8Array — иначе TS ругается на ArrayBufferLike в production build.
+  const bytes = Uint8Array.from(picture.data);
   const blob = new Blob([bytes], { type: mime });
 
   return new File([blob], `cover${ext}`, { type: mime });

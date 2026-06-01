@@ -29,6 +29,7 @@ $SshPrivateKeyPath = "$env:USERPROFILE\.ssh\id_ed25519_github"
 $RunRemoteBackupFirst = $false
 $RestoreVpsBackupToLocal = $true
 $ConfirmBeforeDbReset = $true
+$ConfirmBeforeUploadsReset = $true
 
 # --- Скрипт ---
 $ErrorActionPreference = "Stop"
@@ -140,6 +141,27 @@ function Confirm-LocalDbReset {
     }
 }
 
+function Confirm-LocalUploadsReset {
+    Write-Host ""
+    Write-Host "ВНИМАНИЕ: локальный каталог uploads будет полностью очищен." -ForegroundColor Yellow
+    Write-Host "Путь: $LocalUploadsDir"
+    Write-Host "После подтверждения распакуется архив с VPS (старые файлы, которых нет на сервере, будут удалены)."
+    $answer = Read-Host "Введите yes для очистки uploads и распаковки с VPS (иначе — отмена)"
+    if ($answer -ne "yes") {
+        throw "Очистка uploads отменена пользователем."
+    }
+}
+
+function Reset-LocalUploads {
+    if (Test-Path $LocalUploadsDir) {
+        Get-ChildItem -Path $LocalUploadsDir -Force | Remove-Item -Recurse -Force
+    }
+    else {
+        New-Item -ItemType Directory -Force -Path $LocalUploadsDir | Out-Null
+    }
+    Add-Report "    Каталог uploads очищен: $LocalUploadsDir"
+}
+
 function Reset-LocalDatabase {
     Add-Report "    Отключение сессий..."
     $terminateSql = @"
@@ -248,6 +270,13 @@ $UploadsArchive = Join-Path $LocalDownloadDir "uploads_$Timestamp.tar"
 & $SshExe $RemoteSsh "rm -f '$RemoteUploadsTar'"
 
 $uploadCountBefore = (Get-ChildItem -Path $LocalUploadsDir -Recurse -File -ErrorAction SilentlyContinue).Count
+Add-Report "    Файлов до очистки: $uploadCountBefore"
+
+if ($ConfirmBeforeUploadsReset) {
+    Confirm-LocalUploadsReset
+}
+Reset-LocalUploads
+
 if ((Get-Item $UploadsArchive).Length -gt 512) {
     & $TarExe -xf $UploadsArchive -C $LocalUploadsDir
 }
@@ -306,7 +335,7 @@ Add-Report "| Шаг | Результат"
 Add-Report "|-----|----------"
 Add-Report "| Локальный бэкап (до sync) | $LocalSqlBackup"
 Add-Report "| Дамп с VPS | $LocalDbBackup"
-Add-Report "| Uploads | $LocalUploadsDir ($uploadCountAfter файлов)"
+Add-Report "| Uploads очищены и залиты с VPS | $LocalUploadsDir ($uploadCountAfter файлов, было: $uploadCountBefore)"
 Add-Report "| Локальная БД сброшена и залита с VPS | $(if ($RestoreVpsBackupToLocal) { "да, User: $restoreRows" } else { "нет" })"
 
 $ReportPath = Join-Path $LocalDownloadDir "sync-report_$Timestamp.txt"

@@ -1,4 +1,6 @@
+import type { ImgHTMLAttributes } from "react";
 import rehypeSlug from "rehype-slug";
+import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
@@ -8,9 +10,15 @@ import { splitMarkdownSpoilers } from "@/lib/markdown-spoiler";
 
 import "highlight.js/styles/github-dark.css";
 
-const markdownComponents = {
-  img: ({ src, alt }: { src?: string; alt?: string }) => (
-    <MarkdownImage src={typeof src === "string" ? src : undefined} alt={alt} />
+function markdownImageSrc(
+  src: ImgHTMLAttributes<HTMLImageElement>["src"],
+): string | undefined {
+  return typeof src === "string" ? src : undefined;
+}
+
+const markdownComponents: Components = {
+  img: ({ src, alt }) => (
+    <MarkdownImage src={markdownImageSrc(src)} alt={alt} />
   ),
 };
 
