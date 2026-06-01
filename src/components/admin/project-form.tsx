@@ -6,6 +6,12 @@ import { MarkdownEditor } from "@/components/admin/markdown-editor";
 import { Button } from "@/components/ui/button";
 import { generatePostSlug } from "@/lib/post-slug";
 
+function preventEnterSubmit(event: React.KeyboardEvent<HTMLInputElement>) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+  }
+}
+
 type ProjectFormProps = {
   mode: "create" | "edit";
   saveAction: (formData: FormData) => Promise<void>;
@@ -42,6 +48,7 @@ export function ProjectForm({ mode, project, saveAction }: ProjectFormProps) {
               setTitle(event.target.value);
               if (!slugTouched) setSlug(generatePostSlug(event.target.value));
             }}
+            onKeyDown={preventEnterSubmit}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
           />
         </div>
@@ -55,12 +62,16 @@ export function ProjectForm({ mode, project, saveAction }: ProjectFormProps) {
               setSlugTouched(true);
               setSlug(event.target.value);
             }}
+            onKeyDown={preventEnterSubmit}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3 font-mono text-sm"
           />
         </div>
       </div>
 
       <MarkdownEditor
+        key={
+          project ? `draft-project-description-${project.id}` : "draft-project-description-new"
+        }
         name="description"
         label="Описание (Markdown) *"
         required
@@ -68,9 +79,11 @@ export function ProjectForm({ mode, project, saveAction }: ProjectFormProps) {
         draftKey={
           project ? `draft-project-description-${project.id}` : "draft-project-description-new"
         }
+        resetDraftOnMount={mode === "create"}
       />
 
       <MarkdownEditor
+        key={project ? `draft-project-problem-${project.id}` : "draft-project-problem-new"}
         name="problem"
         label="Проблема (Markdown, необязательно)"
         initialValue={project?.problem ?? ""}
@@ -78,6 +91,9 @@ export function ProjectForm({ mode, project, saveAction }: ProjectFormProps) {
       />
 
       <MarkdownEditor
+        key={
+          project ? `draft-project-solution-${project.id}` : "draft-project-solution-new"
+        }
         name="solution"
         label="Решение (Markdown, необязательно)"
         initialValue={project?.solution ?? ""}
@@ -87,6 +103,7 @@ export function ProjectForm({ mode, project, saveAction }: ProjectFormProps) {
       />
 
       <MarkdownEditor
+        key={project ? `draft-project-result-${project.id}` : "draft-project-result-new"}
         name="result"
         label="Результат (Markdown, необязательно)"
         initialValue={project?.result ?? ""}

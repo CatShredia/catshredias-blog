@@ -36,7 +36,12 @@ export default async function EditPostPage({ params, searchParams }: PageProps) 
       ) : null}
 
       <div className="mt-8">
-        <PostForm mode="edit" post={post} saveAction={updateAction} />
+        <PostForm
+          mode="edit"
+          post={post}
+          saveAction={updateAction}
+          syncContentFromServer={query.saved === "1"}
+        />
       </div>
 
       <form action={deletePostAction.bind(null, id)} className="mt-8">

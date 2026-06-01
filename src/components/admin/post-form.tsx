@@ -8,9 +8,17 @@ import { Button } from "@/components/ui/button";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { generatePostSlug } from "@/lib/post-slug";
 
+function preventEnterSubmit(event: React.KeyboardEvent<HTMLInputElement>) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+  }
+}
+
 type PostFormProps = {
   mode: "create" | "edit";
   saveAction: (formData: FormData) => Promise<void>;
+  /** После ?saved=1 — не подставлять старый localStorage-черновик */
+  syncContentFromServer?: boolean;
   post?: {
     id: string;
     title: string;
@@ -25,7 +33,12 @@ type PostFormProps = {
   };
 };
 
-export function PostForm({ mode, post, saveAction }: PostFormProps) {
+export function PostForm({
+  mode,
+  post,
+  saveAction,
+  syncContentFromServer = false,
+}: PostFormProps) {
   const [title, setTitle] = useState(post?.title ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(mode === "edit");
@@ -52,6 +65,7 @@ export function PostForm({ mode, post, saveAction }: PostFormProps) {
                 setSlug(generatePostSlug(event.target.value));
               }
             }}
+            onKeyDown={preventEnterSubmit}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
           />
         </div>
@@ -65,6 +79,7 @@ export function PostForm({ mode, post, saveAction }: PostFormProps) {
               setSlugTouched(true);
               setSlug(event.target.value);
             }}
+            onKeyDown={preventEnterSubmit}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3 font-mono text-sm"
           />
         </div>
@@ -140,9 +155,12 @@ export function PostForm({ mode, post, saveAction }: PostFormProps) {
       </div>
 
       <MarkdownEditor
+        key={draftKey}
         name="content"
         initialValue={post?.content ?? ""}
         draftKey={draftKey}
+        resetDraftOnMount={mode === "create"}
+        syncFromServerOnMount={syncContentFromServer}
       />
 
       <Button type="submit">

@@ -134,3 +134,18 @@ body {
 .prose :where(h2, h3) {
   scroll-margin-top: 5.5rem;
 }
+
+/* Geist Mono рисует ### / #### лигатурой со сдвигом влево в textarea */
+.admin-markdown-textarea {
+  font-family: var(--font-geist-mono), ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0, "dlig" 0, "clig" 0, "ss11" 0;
+  text-indent: 0;
+  text-align: left;
+  tab-size: 2;
+}
+
+.markdown-editor-preview :where(h1, h2, h3, h4, h5, h6) {
+  margin-inline: 0;
+  padding-inline: 0;
+}

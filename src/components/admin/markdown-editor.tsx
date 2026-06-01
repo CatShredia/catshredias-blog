@@ -4,6 +4,11 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
+import {
+  clearEditorDraft,
+  readEditorDraft,
+  writeEditorDraft,
+} from "@/lib/editor-draft";
 import { SPOILER_MARKDOWN_SNIPPET } from "@/lib/markdown-spoiler";
 
 type MarkdownEditorProps = {
@@ -12,11 +17,30 @@ type MarkdownEditorProps = {
   draftKey: string;
   label?: string;
   required?: boolean;
+  /** Сбросить localStorage для draftKey при монтировании (страница «новый пост») */
+  resetDraftOnMount?: boolean;
+  /** После успешного сохранения — подтянуть контент с сервера, не из черновика */
+  syncFromServerOnMount?: boolean;
 };
 
-function readDraft(key: string, fallback: string) {
-  if (typeof window === "undefined") return fallback;
-  return localStorage.getItem(key) ?? fallback;
+function loadDraftValue(
+  draftKey: string,
+  initialValue: string,
+  options: { resetDraftOnMount?: boolean; syncFromServerOnMount?: boolean },
+) {
+  if (typeof window === "undefined") return initialValue;
+
+  if (options.resetDraftOnMount) {
+    clearEditorDraft(draftKey);
+    return initialValue;
+  }
+
+  if (options.syncFromServerOnMount) {
+    clearEditorDraft(draftKey);
+    return initialValue;
+  }
+
+  return readEditorDraft(draftKey, initialValue);
 }
 
 export function MarkdownEditor({
@@ -25,22 +49,33 @@ export function MarkdownEditor({
   draftKey,
   label = "Содержимое (Markdown)",
   required = false,
+  resetDraftOnMount = false,
+  syncFromServerOnMount = false,
 }: MarkdownEditorProps) {
   const textareaId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState(() => readDraft(draftKey, initialValue));
+  const [value, setValue] = useState(() =>
+    loadDraftValue(draftKey, initialValue, { resetDraftOnMount, syncFromServerOnMount }),
+  );
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [pendingName, setPendingName] = useState<string | null>(null);
   const [cursor, setCursor] = useState<number | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevDraftKeyRef = useRef(draftKey);
+
+  useEffect(() => {
+    if (prevDraftKeyRef.current === draftKey) return;
+    prevDraftKeyRef.current = draftKey;
+    setValue(readEditorDraft(draftKey, initialValue));
+  }, [draftKey, initialValue]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      localStorage.setItem(draftKey, value);
+      writeEditorDraft(draftKey, value);
     }, 500);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -189,7 +224,7 @@ export function MarkdownEditor({
             type="button"
             className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
             onClick={() => {
-              localStorage.removeItem(draftKey);
+              clearEditorDraft(draftKey);
               setValue(initialValue);
               setMessage("Черновик очищен");
             }}
@@ -199,24 +234,29 @@ export function MarkdownEditor({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <textarea
-          ref={textareaRef}
-          id={textareaId}
-          name={name}
-          required={required}
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-          onDrop={onDrop}
-          onDragOver={(event) => event.preventDefault()}
-          onPaste={onPaste}
-          rows={18}
-          className="w-full rounded-lg border border-border bg-card px-3 py-2 font-mono text-sm"
-          placeholder="Пишите Markdown… Перетащите или вставьте (Ctrl+V) изображение."
-        />
-        <div className="rounded-lg border border-border bg-card p-4">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+        <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card">
+          <textarea
+            ref={textareaRef}
+            id={textareaId}
+            name={name}
+            required={required}
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            onDrop={onDrop}
+            onDragOver={(event) => event.preventDefault()}
+            onPaste={onPaste}
+            rows={18}
+            spellCheck
+            className="admin-markdown-textarea block w-full min-w-0 resize-y border-0 bg-transparent px-3 py-2 text-sm leading-relaxed outline-none"
+            placeholder="Пишите Markdown… Перетащите или вставьте (Ctrl+V) изображение."
+          />
+        </div>
+        <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card p-4">
           <p className="mb-2 text-xs font-medium text-muted">Предпросмотр</p>
-          <MarkdownContent content={value || "*Пусто*"} />
+          <div className="markdown-editor-preview min-w-0">
+            <MarkdownContent content={value || "*Пусто*"} />
+          </div>
         </div>
       </div>
 
