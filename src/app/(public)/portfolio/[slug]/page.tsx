@@ -22,13 +22,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const project = await getProjectBySlug(slug);
   if (!project) return { title: "Не найдено" };
 
+  const plainDescription = project.description.replace(/[#>*_`[\]]/g, "").slice(0, 160);
   const url = `${siteUrl}/portfolio/${project.slug}`;
   return {
     title: project.title,
-    description: project.description,
+    description: plainDescription,
     openGraph: {
       title: project.title,
-      description: project.description,
+      description: plainDescription,
       url,
     },
     alternates: { canonical: url },
@@ -58,7 +59,6 @@ export default async function ProjectPage({ params }: PageProps) {
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
           {project.title}
         </h1>
-        <p className="mt-3 text-muted">{project.description}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           {project.stack.map((item) => (
             <Badge key={item}>{item}</Badge>
@@ -76,21 +76,35 @@ export default async function ProjectPage({ params }: PageProps) {
         </div>
       </header>
 
-      <Section title="Проблема" compact>
+      <Section title="Описание" compact>
         <div className="max-w-3xl text-muted">
-          <MarkdownContent content={project.problem} />
+          <MarkdownContent content={project.description} />
         </div>
       </Section>
-      <Section title="Решение" compact>
-        <div className="max-w-3xl text-muted">
-          <MarkdownContent content={project.solution} />
-        </div>
-      </Section>
-      <Section title="Результат" compact>
-        <div className="max-w-3xl text-muted">
-          <MarkdownContent content={project.result} />
-        </div>
-      </Section>
+
+      {project.problem ? (
+        <Section title="Проблема" compact>
+          <div className="max-w-3xl text-muted">
+            <MarkdownContent content={project.problem} />
+          </div>
+        </Section>
+      ) : null}
+
+      {project.solution ? (
+        <Section title="Решение" compact>
+          <div className="max-w-3xl text-muted">
+            <MarkdownContent content={project.solution} />
+          </div>
+        </Section>
+      ) : null}
+
+      {project.result ? (
+        <Section title="Результат" compact>
+          <div className="max-w-3xl text-muted">
+            <MarkdownContent content={project.result} />
+          </div>
+        </Section>
+      ) : null}
     </Container>
   );
 }

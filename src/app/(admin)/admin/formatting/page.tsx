@@ -43,6 +43,14 @@ const answer = 42;
 [Текст ссылки](https://example.com)
 
 ![alt](https://placehold.co/600x300)
+
+## Спойлер
+
+Текст скрыт до нажатия на заголовок:
+
+:::spoiler Подробности
+Скрытый абзац с **Markdown**.
+:::
 `;
 
 export default function AdminFormattingPage() {

@@ -113,9 +113,9 @@ model Project {
   title       String
   slug        String   @unique
   description String   @db.Text
-  problem     String   @db.Text
-  solution    String   @db.Text
-  result      String   @db.Text
+  problem     String?  @db.Text
+  solution    String?  @db.Text
+  result      String?  @db.Text
   stack       String[]
   roles       String[]
   repoUrl     String?

@@ -4,12 +4,14 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
+import { SPOILER_MARKDOWN_SNIPPET } from "@/lib/markdown-spoiler";
 
 type MarkdownEditorProps = {
   name: string;
   initialValue?: string;
   draftKey: string;
   label?: string;
+  required?: boolean;
 };
 
 function readDraft(key: string, fallback: string) {
@@ -22,6 +24,7 @@ export function MarkdownEditor({
   initialValue = "",
   draftKey,
   label = "Содержимое (Markdown)",
+  required = false,
 }: MarkdownEditorProps) {
   const textareaId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -178,6 +181,13 @@ export function MarkdownEditor({
           <button
             type="button"
             className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
+            onClick={() => insertSnippet(SPOILER_MARKDOWN_SNIPPET)}
+          >
+            Спойлер
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
             onClick={() => {
               localStorage.removeItem(draftKey);
               setValue(initialValue);
@@ -194,6 +204,7 @@ export function MarkdownEditor({
           ref={textareaRef}
           id={textareaId}
           name={name}
+          required={required}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           onDrop={onDrop}
@@ -230,8 +241,8 @@ export function MarkdownEditor({
         />
       ) : null}
       <p className="text-xs text-muted">
-        Изображения: кнопка, перетаскивание в поле или вставка из буфера. Автосохранение
-        каждые 500 мс.
+        Изображения: кнопка, drag-and-drop или Ctrl+V. Спойлер: кнопка «Спойлер» или блок
+        :::spoiler Заголовок … :::. Автосохранение каждые 500 мс.
       </p>
     </div>
   );

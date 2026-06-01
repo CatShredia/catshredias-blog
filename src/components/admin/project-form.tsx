@@ -14,9 +14,9 @@ type ProjectFormProps = {
     title: string;
     slug: string;
     description: string;
-    problem: string;
-    solution: string;
-    result: string;
+    problem: string | null;
+    solution: string | null;
+    result: string | null;
     stack: string[];
     roles: string[];
     repoUrl: string | null;
@@ -60,34 +60,35 @@ export function ProjectForm({ mode, project, saveAction }: ProjectFormProps) {
         </div>
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium">Описание</label>
-        <textarea
-          name="description"
-          required
-          rows={3}
-          defaultValue={project?.description ?? ""}
-          className="w-full rounded-lg border border-border bg-card px-3 py-2"
-        />
-      </div>
+      <MarkdownEditor
+        name="description"
+        label="Описание (Markdown) *"
+        required
+        initialValue={project?.description ?? ""}
+        draftKey={
+          project ? `draft-project-description-${project.id}` : "draft-project-description-new"
+        }
+      />
 
       <MarkdownEditor
         name="problem"
-        label="Проблема (Markdown)"
+        label="Проблема (Markdown, необязательно)"
         initialValue={project?.problem ?? ""}
         draftKey={project ? `draft-project-problem-${project.id}` : "draft-project-problem-new"}
       />
 
       <MarkdownEditor
         name="solution"
-        label="Решение (Markdown)"
+        label="Решение (Markdown, необязательно)"
         initialValue={project?.solution ?? ""}
-        draftKey={project ? `draft-project-solution-${project.id}` : "draft-project-solution-new"}
+        draftKey={
+          project ? `draft-project-solution-${project.id}` : "draft-project-solution-new"
+        }
       />
 
       <MarkdownEditor
         name="result"
-        label="Результат (Markdown)"
+        label="Результат (Markdown, необязательно)"
         initialValue={project?.result ?? ""}
         draftKey={project ? `draft-project-result-${project.id}` : "draft-project-result-new"}
       />

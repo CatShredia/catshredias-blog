@@ -1,45 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { BookStatus } from "@prisma/client";
 import { useMemo, useState } from "react";
 
-import { deleteBookAction } from "@/app/(admin)/admin/books/actions";
+import { deleteProjectAction } from "@/app/(admin)/admin/projects/actions";
 import { IconEdit, IconTrash } from "@/components/ui/icons";
-import { formatDateRu } from "@/lib/dates";
-import { formatStarRating } from "@/lib/book-rating";
-import { BOOK_STATUS_LABELS } from "@/lib/validations/book";
 
-type SortKey = "title" | "status" | "rating" | "readAt";
+type SortKey = "title" | "updatedAt";
 type SortDir = "asc" | "desc";
 
-export type AdminBookRow = {
+export type AdminProjectRow = {
   id: string;
   title: string;
-  author: string | null;
-  status: BookStatus;
-  rating: number | null;
-  readAt: string | null;
-  reviewTitle: string | null;
+  slug: string;
+  stack: string[];
+  updatedAt: string;
 };
 
-function compareBooks(a: AdminBookRow, b: AdminBookRow, key: SortKey, dir: SortDir) {
+function compareProjects(
+  a: AdminProjectRow,
+  b: AdminProjectRow,
+  key: SortKey,
+  dir: SortDir,
+) {
   let result = 0;
-
   if (key === "title") {
-    const aTitle = a.author ? `${a.title} ${a.author}` : a.title;
-    const bTitle = b.author ? `${b.title} ${b.author}` : b.title;
-    result = aTitle.localeCompare(bTitle, "ru");
-  } else if (key === "status") {
-    result = a.status.localeCompare(b.status);
-  } else if (key === "rating") {
-    result = (a.rating ?? 0) - (b.rating ?? 0);
+    result = a.title.localeCompare(b.title, "ru");
   } else {
-    const aDate = a.readAt ? new Date(a.readAt).getTime() : 0;
-    const bDate = b.readAt ? new Date(b.readAt).getTime() : 0;
-    result = aDate - bDate;
+    result = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
   }
-
   return dir === "asc" ? result : -result;
 }
 
@@ -71,13 +60,13 @@ function SortHeader({
   );
 }
 
-export function AdminBooksTable({ books }: { books: AdminBookRow[] }) {
-  const [sortKey, setSortKey] = useState<SortKey>("readAt");
+export function AdminProjectsTable({ projects }: { projects: AdminProjectRow[] }) {
+  const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const sorted = useMemo(
-    () => [...books].sort((a, b) => compareBooks(a, b, sortKey, sortDir)),
-    [books, sortKey, sortDir],
+    () => [...projects].sort((a, b) => compareProjects(a, b, sortKey, sortDir)),
+    [projects, sortKey, sortDir],
   );
 
   function toggleSort(key: SortKey) {
@@ -91,93 +80,69 @@ export function AdminBooksTable({ books }: { books: AdminBookRow[] }) {
 
   return (
     <div className="mt-8 overflow-x-auto rounded-xl border border-border">
-      <table className="w-full min-w-[720px] text-left text-sm">
+      <table className="w-full min-w-[640px] text-left text-sm">
         <thead className="border-b border-border bg-card">
           <tr>
             <th className="px-4 py-3">
               <SortHeader
-                label="Книга"
+                label="Название"
                 sortKey="title"
                 activeKey={sortKey}
                 dir={sortDir}
                 onSort={toggleSort}
               />
             </th>
+            <th className="px-4 py-3 font-medium">Стек</th>
             <th className="px-4 py-3">
               <SortHeader
-                label="Статус"
-                sortKey="status"
+                label="Обновлён"
+                sortKey="updatedAt"
                 activeKey={sortKey}
                 dir={sortDir}
                 onSort={toggleSort}
               />
             </th>
-            <th className="px-4 py-3">
-              <SortHeader
-                label="Рейтинг"
-                sortKey="rating"
-                activeKey={sortKey}
-                dir={sortDir}
-                onSort={toggleSort}
-              />
-            </th>
-            <th className="px-4 py-3">
-              <SortHeader
-                label="Дата прочтения"
-                sortKey="readAt"
-                activeKey={sortKey}
-                dir={sortDir}
-                onSort={toggleSort}
-              />
-            </th>
-            <th className="px-4 py-3 font-medium">Отзыв</th>
             <th className="px-4 py-3 text-right font-medium">Действия</th>
           </tr>
         </thead>
         <tbody>
           {sorted.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-4 py-6 text-muted">
-                Книг пока нет.
+              <td colSpan={4} className="px-4 py-6 text-muted">
+                Проектов пока нет.
               </td>
             </tr>
           ) : (
-            sorted.map((book) => (
-              <tr key={book.id} className="border-b border-border last:border-0">
+            sorted.map((project) => (
+              <tr key={project.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3">
-                  <p className="font-medium">{book.title}</p>
-                  {book.author ? (
-                    <p className="text-xs text-muted">{book.author}</p>
-                  ) : null}
-                </td>
-                <td className="px-4 py-3">{BOOK_STATUS_LABELS[book.status]}</td>
-                <td className="px-4 py-3">
-                  {book.rating ? formatStarRating(book.rating) : "—"}
+                  <p className="font-medium">{project.title}</p>
+                  <p className="text-xs text-muted">/{project.slug}</p>
                 </td>
                 <td className="px-4 py-3 text-muted">
-                  {book.readAt ? formatDateRu(book.readAt) : "—"}
+                  {project.stack.slice(0, 3).join(", ")}
                 </td>
                 <td className="px-4 py-3 text-muted">
-                  {book.reviewTitle ?? "—"}
+                  {new Date(project.updatedAt).toLocaleDateString("ru-RU")}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-1">
                     <Link
-                      href={`/admin/books/${book.id}/edit`}
+                      href={`/admin/projects/${project.id}/edit`}
                       className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-border text-muted hover:bg-card hover:text-foreground"
                       title="Редактировать"
-                      aria-label={`Редактировать «${book.title}»`}
+                      aria-label={`Редактировать «${project.title}»`}
                     >
                       <IconEdit />
                     </Link>
-                    <form action={deleteBookAction.bind(null, book.id)}>
+                    <form action={deleteProjectAction.bind(null, project.id)}>
                       <button
                         type="submit"
                         className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-border text-muted hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-600"
                         title="Удалить"
-                        aria-label={`Удалить «${book.title}»`}
+                        aria-label={`Удалить «${project.title}»`}
                         onClick={(event) => {
-                          if (!confirm(`Удалить книгу «${book.title}»?`)) {
+                          if (!confirm(`Удалить проект «${project.title}»?`)) {
                             event.preventDefault();
                           }
                         }}
