@@ -9,6 +9,7 @@ import { PostTaxonomyBadges } from "@/components/blog/post-taxonomy-badges";
 import { Container } from "@/components/ui/container";
 import { SafeImage } from "@/components/ui/safe-image";
 import type { CommentTreeNode } from "@/lib/comments-tree";
+import { auth } from "@/lib/auth";
 import { listApprovedComments } from "@/lib/queries/comments";
 import {
   getPublishedPostBySlug,
@@ -20,14 +21,18 @@ type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-function mapCommentToItem(node: CommentTreeNode): CommentItem {
+function mapCommentToItem(
+  node: CommentTreeNode,
+  viewerUserId: string | null,
+): CommentItem {
   return {
     id: node.id,
     authorName: node.authorName,
     authorImage: node.authorImage,
     content: node.content,
     createdAt: node.createdAt,
-    replies: node.replies.map(mapCommentToItem),
+    isOwn: Boolean(viewerUserId && node.authorUserId === viewerUserId),
+    replies: node.replies.map((reply) => mapCommentToItem(reply, viewerUserId)),
   };
 }
 
@@ -62,7 +67,11 @@ export default async function BlogPostPage({ params }: PageProps) {
   const post = await getPublishedPostBySlug(slug);
   if (!post) notFound();
 
-  const comments = await listApprovedComments(post.id);
+  const [comments, session] = await Promise.all([
+    listApprovedComments(post.id),
+    auth(),
+  ]);
+  const viewerUserId = session?.user?.id ?? null;
   const jsonLd = articleJsonLd(post);
 
   return (
@@ -122,7 +131,9 @@ export default async function BlogPostPage({ params }: PageProps) {
       <CommentSection
         postId={post.id}
         postSlug={post.slug}
-        initialComments={comments.map(mapCommentToItem)}
+        initialComments={comments.map((node) =>
+          mapCommentToItem(node, viewerUserId),
+        )}
       />
     </Container>
   );

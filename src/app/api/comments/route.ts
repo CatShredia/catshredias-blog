@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
           authorImage: author.authorImage,
           content: comment.content,
           createdAt: comment.createdAt.toISOString(),
+          isOwn: true,
           replies: [],
         },
         message: "Комментарий опубликован",

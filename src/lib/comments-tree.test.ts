@@ -13,6 +13,7 @@ describe("buildCommentTree", () => {
       {
         id: "1",
         parentId: null,
+        authorUserId: null,
         authorName: "A",
         authorImage: null,
         content: "root",
@@ -21,6 +22,7 @@ describe("buildCommentTree", () => {
       {
         id: "2",
         parentId: "1",
+        authorUserId: null,
         authorName: "B",
         authorImage: null,
         content: "child",
@@ -29,6 +31,7 @@ describe("buildCommentTree", () => {
       {
         id: "3",
         parentId: "2",
+        authorUserId: null,
         authorName: "C",
         authorImage: null,
         content: "grandchild",

@@ -1,8 +1,8 @@
 import { CommentStatus, NotifyMode } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { siteUrl } from "@/lib/seo";
 
+import { formatCommentsGroupedByPost, formatDigestCommentTelegram } from "./comment-format";
 import { createAdminNotification } from "./create";
 import { getNotificationSettings } from "./settings";
 
@@ -52,20 +52,16 @@ export async function runCommentDigest(period: DigestPeriod) {
   }
 
   const periodLabel = period === "daily" ? "за сутки" : "за неделю";
-  const preview = comments
-    .slice(0, 3)
-    .map((c) => `• ${c.authorName} — «${c.post.title}»`)
-    .join("\n");
-  const more =
-    comments.length > 3 ? `\n…и ещё ${comments.length - 3}` : "";
+  const grouped = formatCommentsGroupedByPost(comments);
+  const body = `${comments.length} непросмотренных ${periodLabel}:\n\n${grouped}`;
 
   await createAdminNotification({
     type: "COMMENT_DIGEST",
     title: `Новые комментарии (${comments.length})`,
-    body: `${comments.length} непросмотренных ${periodLabel}:\n${preview}${more}`,
+    body,
     href: "/admin/comments",
     telegram: {
-      text: `Комментарии (${comments.length}) ${periodLabel}\n${preview}${more}\n\n${siteUrl}/admin/comments`,
+      text: formatDigestCommentTelegram(comments, periodLabel),
     },
   });
 

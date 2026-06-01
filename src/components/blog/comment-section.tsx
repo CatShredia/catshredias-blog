@@ -18,8 +18,21 @@ export type CommentItem = {
   authorImage?: string | null;
   content: string;
   createdAt: Date | string;
+  isOwn?: boolean;
   replies: CommentItem[];
 };
+
+function removeCommentFromTree(
+  comments: CommentItem[],
+  commentId: string,
+): CommentItem[] {
+  return comments
+    .filter((comment) => comment.id !== commentId)
+    .map((comment) => ({
+      ...comment,
+      replies: removeCommentFromTree(comment.replies, commentId),
+    }));
+}
 
 function addReplyToTree(
   comments: CommentItem[],
@@ -63,6 +76,7 @@ export function CommentSection({
   const [submitting, setSubmitting] = useState(false);
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [reportReason, setReportReason] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function submitComment(payload: {
     content: string;
@@ -114,6 +128,33 @@ export function CommentSection({
     }
   }
 
+  async function deleteComment(commentId: string) {
+    if (!session?.user) return;
+    if (!window.confirm("Удалить этот комментарий?")) return;
+
+    setDeletingId(commentId);
+    setStatusMessage(null);
+
+    try {
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: "DELETE",
+      });
+      const data = (await response.json()) as { error?: string; message?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "Не удалось удалить");
+      }
+      setComments((prev) => removeCommentFromTree(prev, commentId));
+      setStatusMessage(data.message ?? "Комментарий удалён");
+      router.refresh();
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error ? error.message : "Не удалось удалить",
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   async function submitReport(commentId: string) {
     if (!session?.user || reportReason.length < 5) return;
 
@@ -158,6 +199,8 @@ export function CommentSection({
               onReportCancel={() => setReportingId(null)}
               onReportReasonChange={setReportReason}
               onReportSubmit={submitReport}
+              deletingId={deletingId}
+              onDelete={deleteComment}
               onReply={async (parentId, replyContent, token) => {
                 const data = await submitComment({
                   content: replyContent,
@@ -297,6 +340,8 @@ function CommentThread({
   onReportCancel,
   onReportReasonChange,
   onReportSubmit,
+  deletingId,
+  onDelete,
   onReply,
 }: {
   comment: CommentItem;
@@ -305,10 +350,12 @@ function CommentThread({
   siteKey?: string;
   reportingId: string | null;
   reportReason: string;
+  deletingId: string | null;
   onReportOpen: (id: string) => void;
   onReportCancel: () => void;
   onReportReasonChange: (v: string) => void;
   onReportSubmit: (id: string) => void | Promise<void>;
+  onDelete: (id: string) => void | Promise<void>;
   onReply: (
     parentId: string,
     content: string,
@@ -367,7 +414,17 @@ function CommentThread({
               {comment.content}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              {isLoggedIn ? (
+              {comment.isOwn ? (
+                <button
+                  type="button"
+                  disabled={deletingId === comment.id}
+                  className="text-xs text-red-600 underline-offset-4 hover:underline disabled:opacity-50"
+                  onClick={() => void onDelete(comment.id)}
+                >
+                  {deletingId === comment.id ? "Удаление…" : "Удалить"}
+                </button>
+              ) : null}
+              {isLoggedIn && !comment.isOwn ? (
                 <button
                   type="button"
                   className="text-xs text-muted underline-offset-4 hover:underline"
@@ -430,6 +487,8 @@ function CommentThread({
               onReportCancel={onReportCancel}
               onReportReasonChange={onReportReasonChange}
               onReportSubmit={onReportSubmit}
+              deletingId={deletingId}
+              onDelete={onDelete}
               onReply={onReply}
             />
           ))}

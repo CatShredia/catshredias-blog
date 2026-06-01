@@ -15,6 +15,7 @@ function mapCommentRow(comment: {
   authorName: string;
   content: string;
   createdAt: Date;
+  userId: string | null;
   user: {
     name: string | null;
     image: string | null;
@@ -25,6 +26,7 @@ function mapCommentRow(comment: {
   return {
     id: comment.id,
     parentId: comment.parentId,
+    authorUserId: comment.userId,
     authorName: author.authorName,
     authorImage: author.authorImage,
     content: comment.content,
@@ -180,6 +182,36 @@ export async function updateReportStatus(
 
 export async function deleteComment(id: string) {
   return prisma.comment.delete({ where: { id } });
+}
+
+export async function deleteOwnComment(commentId: string, userId: string) {
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId },
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      _count: {
+        select: {
+          replies: { where: { status: CommentStatus.APPROVED } },
+        },
+      },
+    },
+  });
+
+  if (!comment || comment.status !== CommentStatus.APPROVED) {
+    throw new Error("Комментарий не найден");
+  }
+
+  if (comment.userId !== userId) {
+    throw new Error("Можно удалить только свой комментарий");
+  }
+
+  if (comment._count.replies > 0) {
+    throw new Error("Нельзя удалить комментарий, на который уже ответили");
+  }
+
+  return prisma.comment.delete({ where: { id: commentId } });
 }
 
 export async function hideComment(id: string) {

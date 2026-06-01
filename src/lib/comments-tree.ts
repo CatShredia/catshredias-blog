@@ -3,6 +3,7 @@ export const MAX_COMMENT_DEPTH = 5;
 export type CommentRow = {
   id: string;
   parentId: string | null;
+  authorUserId: string | null;
   authorName: string;
   authorImage: string | null;
   content: string;
