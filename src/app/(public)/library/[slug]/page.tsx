@@ -11,6 +11,7 @@ import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { getBookBySlug } from "@/lib/queries/books";
 import { formatDateRu } from "@/lib/dates";
+import { blogPostPath, libraryBookPath } from "@/lib/slug";
 import { siteUrl } from "@/lib/seo";
 import { BOOK_STATUS_LABELS } from "@/lib/validations/book";
 
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title: book.title,
       images: book.coverImage ? [book.coverImage] : undefined,
-      url: `${siteUrl}/library/${book.slug}`,
+      url: `${siteUrl}${libraryBookPath(book.slug)}`,
     },
   };
 }
@@ -91,7 +92,7 @@ export default async function BookPage({ params }: PageProps) {
 
       {book.reviewPost ? (
         <Section title="Отзыв в блоге" className="mt-10">
-          <ButtonLink href={`/blog/${book.reviewPost.slug}`}>
+          <ButtonLink href={blogPostPath(book.reviewPost.slug)}>
             {book.reviewPost.title}
           </ButtonLink>
           {book.reviewPost.excerpt ? (

@@ -11,6 +11,7 @@ import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { BOOK_STATUS_LABELS } from "@/lib/validations/book";
 import { toDateInputValue } from "@/lib/dates";
 import { generatePostSlug } from "@/lib/post-slug";
+import { blogPostPath } from "@/lib/slug";
 
 type BookFormProps = {
   mode: "create" | "edit";
@@ -157,7 +158,7 @@ export function BookForm({
           {book.reviewPost ? (
             <p className="mt-2 text-sm text-muted">
               Связан:{" "}
-              <Link href={`/blog/${book.reviewPost.slug}`} className="text-accent underline">
+              <Link href={blogPostPath(book.reviewPost.slug)} className="text-accent underline">
                 {book.reviewPost.title}
               </Link>
             </p>

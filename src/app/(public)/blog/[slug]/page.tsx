@@ -13,6 +13,7 @@ import { listApprovedComments } from "@/lib/queries/comments";
 import {
   getPublishedPostBySlug,
 } from "@/lib/queries/posts";
+import { blogPostPath } from "@/lib/slug";
 import { articleJsonLd, siteUrl } from "@/lib/seo";
 
 type PageProps = {
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!post) return { title: "Не найдено" };
 
   const description = post.excerpt ?? post.title;
-  const url = `${siteUrl}/blog/${post.slug}`;
+  const url = `${siteUrl}${blogPostPath(post.slug)}`;
 
   return {
     title: post.title,

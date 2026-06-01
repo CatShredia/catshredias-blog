@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { uniqueSlugWithSuffix } from "@/lib/post-slug";
-import { slugify } from "@/lib/slug";
+import { portfolioProjectPath, slugify } from "@/lib/slug";
 import {
   parseCommaList,
   projectFormSchema,
@@ -89,7 +89,7 @@ export async function updateProjectAction(id: string, formData: FormData) {
   });
 
   revalidatePath("/portfolio");
-  revalidatePath(`/portfolio/${slug}`);
+  revalidatePath(portfolioProjectPath(slug));
   revalidatePath("/admin/projects");
   redirect(`/admin/projects/${id}/edit?saved=1`);
 }

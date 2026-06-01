@@ -1,6 +1,7 @@
 import { PostStatus, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { routeSlugCandidates } from "@/lib/slug";
 
 const postListSelect = {
   id: true,
@@ -137,18 +138,24 @@ export async function listPublishedPosts({
 }
 
 export async function getPublishedPostBySlug(slug: string) {
-  return prisma.post.findFirst({
-    where: {
-      slug,
-      status: PostStatus.PUBLISHED,
-      publishedAt: { lte: new Date() },
-    },
-    include: {
-      author: { select: { name: true, email: true } },
-      categories: true,
-      tags: true,
-    },
-  });
+  const where = {
+    status: PostStatus.PUBLISHED,
+    publishedAt: { lte: new Date() },
+  } as const;
+
+  for (const candidate of routeSlugCandidates(slug)) {
+    const post = await prisma.post.findFirst({
+      where: { slug: candidate, ...where },
+      include: {
+        author: { select: { name: true, email: true } },
+        categories: true,
+        tags: true,
+      },
+    });
+    if (post) return post;
+  }
+
+  return null;
 }
 
 export async function getPublishedPostSlugs() {

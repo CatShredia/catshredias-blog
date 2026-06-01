@@ -1,6 +1,7 @@
 import type { ContactMessage, Report } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { blogPostPath } from "@/lib/slug";
 
 import { createAdminNotification } from "./create";
 import { getNotificationSettings, shouldNotify } from "./settings";
@@ -63,7 +64,7 @@ export async function notifyCommentInstant(commentId: string) {
     type: "COMMENT_INSTANT",
     title: "Новый комментарий",
     body: `${comment.authorName} к посту «${comment.post.title}»: ${comment.content.slice(0, 160)}${comment.content.length > 160 ? "…" : ""}`,
-    href: `/blog/${comment.post.slug}#comments`,
+    href: `${blogPostPath(comment.post.slug)}#comments`,
     entityId: comment.id,
     telegram: true,
   });

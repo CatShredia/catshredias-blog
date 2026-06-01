@@ -6,8 +6,11 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/admin-auth";
 import {
+  getNotificationSettings,
   markAllNotificationsRead,
   markNotificationRead,
+  runCommentDigest,
+  shouldDigestComments,
   updateNotificationSettings,
 } from "@/lib/notifications";
 
@@ -62,4 +65,22 @@ export async function updateNotificationSettingsAction(formData: FormData) {
   });
 
   revalidatePath("/admin/notifications");
+}
+
+/** Ручной дайджест комментариев (для режима «раз в сутки/неделю», без cron). */
+export async function runCommentDigestNowAction() {
+  await requireAdmin();
+  const settings = await getNotificationSettings();
+
+  if (!shouldDigestComments(settings.commentMode)) {
+    throw new Error(
+      "Дайджест доступен только при режиме комментариев «раз в сутки» или «раз в неделю»",
+    );
+  }
+
+  const period =
+    settings.commentMode === NotifyMode.DAILY ? "daily" : "weekly";
+  await runCommentDigest(period);
+  revalidatePath("/admin/notifications");
+  revalidatePath("/admin");
 }

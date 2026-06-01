@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { portfolioProjectPath } from "@/lib/slug";
 import {
   mockProjects,
   mockRoles,
@@ -60,7 +61,7 @@ export function PortfolioGrid() {
       <ul className="grid gap-4 sm:grid-cols-2">
         {filtered.map((project) => (
           <li key={project.slug}>
-            <Card href={`/portfolio/${project.slug}`}>
+            <Card href={portfolioProjectPath(project.slug)}>
               <h2 className="text-xl font-semibold">{project.title}</h2>
               <p className="mt-2 text-sm text-muted">{project.description}</p>
               <div className="mt-3 flex flex-wrap gap-2">

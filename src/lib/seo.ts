@@ -1,5 +1,7 @@
 import type { Post, Project, User } from "@prisma/client";
 
+import { blogPostPath, portfolioProjectPath } from "@/lib/slug";
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 export function articleJsonLd(
@@ -15,7 +17,7 @@ export function articleJsonLd(
       "@type": "Person",
       name: post.author.name ?? post.author.email,
     },
-    mainEntityOfPage: `${siteUrl}/blog/${post.slug}`,
+    mainEntityOfPage: `${siteUrl}${blogPostPath(post.slug)}`,
   };
 }
 
@@ -43,7 +45,7 @@ export function projectJsonLd(project: Project) {
     "@type": "CreativeWork",
     name: project.title,
     description: project.description,
-    url: `${siteUrl}/portfolio/${project.slug}`,
+    url: `${siteUrl}${portfolioProjectPath(project.slug)}`,
   };
 }
 

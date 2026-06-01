@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { StarRatingDisplay } from "@/components/ui/star-rating";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { libraryBookPath } from "@/lib/slug";
 import type { BookListItem } from "@/lib/queries/books";
 import { formatDateRu } from "@/lib/dates";
 import { BOOK_STATUS_LABELS } from "@/lib/validations/book";
@@ -77,7 +78,7 @@ export function LibraryGrid({
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((book) => (
             <li key={book.id}>
-              <Card href={`/library/${book.slug}`}>
+              <Card href={libraryBookPath(book.slug)}>
                 {book.coverImage ? (
                   <div className="relative mb-3 h-40 w-full overflow-hidden rounded-lg">
                     <SafeImage

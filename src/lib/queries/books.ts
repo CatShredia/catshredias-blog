@@ -1,7 +1,7 @@
 import { BookStatus, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { slugify } from "@/lib/slug";
+import { routeSlugCandidates, slugify } from "@/lib/slug";
 
 const bookListSelect = {
   id: true,
@@ -45,23 +45,30 @@ export async function listBooks(filters?: {
 }
 
 export async function getBookBySlug(slug: string) {
-  return prisma.book.findUnique({
-    where: { slug },
-    include: {
-      tags: true,
-      reviewPost: {
-        where: { status: "PUBLISHED" },
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          excerpt: true,
-          coverImage: true,
-          publishedAt: true,
-        },
+  const include = {
+    tags: true,
+    reviewPost: {
+      where: { status: "PUBLISHED" as const },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        excerpt: true,
+        coverImage: true,
+        publishedAt: true,
       },
     },
-  });
+  };
+
+  for (const candidate of routeSlugCandidates(slug)) {
+    const book = await prisma.book.findUnique({
+      where: { slug: candidate },
+      include,
+    });
+    if (book) return book;
+  }
+
+  return null;
 }
 
 export async function getBookSlugs() {

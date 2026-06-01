@@ -71,6 +71,10 @@ export function NotificationSettingsForm({
             <option value={NotifyMode.WEEKLY}>{modeLabels.WEEKLY}</option>
             <option value={NotifyMode.OFF}>{modeLabels.OFF}</option>
           </select>
+          <p className="mt-1 text-xs text-muted">
+            «Сразу» — запись в ленте и Telegram сразу. «Раз в сутки/неделю» — одно
+            сводное уведомление по cron или кнопке на этой странице.
+          </p>
         </div>
       </div>
 

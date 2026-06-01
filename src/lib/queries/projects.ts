@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { routeSlugCandidates } from "@/lib/slug";
 
 const projectListSelect = {
   id: true,
@@ -32,7 +33,11 @@ export async function listProjects(filters?: {
 }
 
 export async function getProjectBySlug(slug: string) {
-  return prisma.project.findUnique({ where: { slug } });
+  for (const candidate of routeSlugCandidates(slug)) {
+    const project = await prisma.project.findUnique({ where: { slug: candidate } });
+    if (project) return project;
+  }
+  return null;
 }
 
 export async function getProjectSlugs() {

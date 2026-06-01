@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { formatDateRu } from "@/lib/dates";
+import { blogPostPath } from "@/lib/slug";
 import { mapCommentAuthor } from "@/lib/deleted-user";
 import { countPendingReports, listAdminComments } from "@/lib/queries/comments";
 
@@ -67,7 +68,7 @@ export default async function AdminCommentsPage() {
                 <p className="text-xs text-muted">
                   {formatDateRu(comment.createdAt)} ·{" "}
                   <Link
-                    href={`/blog/${comment.post.slug}`}
+                    href={blogPostPath(comment.post.slug)}
                     className="underline"
                   >
                     {comment.post.title}

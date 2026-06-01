@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { useState } from "react";
 
 import { MAX_COMMENT_DEPTH } from "@/lib/comments-tree";
+import { blogPostPath } from "@/lib/slug";
 import { DELETED_USER_DISPLAY_NAME } from "@/lib/deleted-user";
 import { formatDateRu, toIsoString } from "@/lib/dates";
 
@@ -51,8 +52,9 @@ export function CommentSection({
   const router = useRouter();
   const { data: session, status } = useSession();
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-  const loginHref = `/login?callbackUrl=${encodeURIComponent(`/blog/${postSlug}`)}`;
-  const registerHref = `/register?callbackUrl=${encodeURIComponent(`/blog/${postSlug}`)}`;
+  const postPath = blogPostPath(postSlug);
+  const loginHref = `/login?callbackUrl=${encodeURIComponent(postPath)}`;
+  const registerHref = `/register?callbackUrl=${encodeURIComponent(postPath)}`;
 
   const [comments, setComments] = useState(initialComments);
   const [content, setContent] = useState("");

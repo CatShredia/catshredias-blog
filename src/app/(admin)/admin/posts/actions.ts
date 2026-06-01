@@ -13,7 +13,7 @@ import {
   upsertTags,
 } from "@/lib/queries/admin";
 import { uniqueSlugWithSuffix } from "@/lib/post-slug";
-import { slugify } from "@/lib/slug";
+import { blogPostPath, slugify } from "@/lib/slug";
 import {
   parseCommaList,
   postFormSchema,
@@ -120,7 +120,7 @@ export async function updatePostAction(id: string, formData: FormData) {
   });
 
   revalidatePath("/blog");
-  revalidatePath(`/blog/${slug}`);
+  revalidatePath(blogPostPath(slug));
   revalidatePath("/admin/posts");
   redirect(`/admin/posts/${id}/edit?saved=1`);
 }

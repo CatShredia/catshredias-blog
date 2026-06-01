@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { portfolioProjectPath } from "@/lib/slug";
 import type { ProjectListItem } from "@/lib/queries/projects";
 
 export function PortfolioGridClient({
@@ -80,7 +81,7 @@ export function PortfolioGridClient({
       <ul className="grid gap-4 sm:grid-cols-2">
         {items.map((project) => (
           <li key={project.id}>
-            <Card href={`/portfolio/${project.slug}`}>
+            <Card href={portfolioProjectPath(project.slug)}>
               <h2 className="text-xl font-semibold">{project.title}</h2>
               <p className="mt-2 text-sm text-muted">{project.description}</p>
               <div className="mt-3 flex flex-wrap gap-2">

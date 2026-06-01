@@ -9,7 +9,7 @@ import { parseDateInput } from "@/lib/dates";
 import { prisma } from "@/lib/prisma";
 import { upsertBookTags } from "@/lib/queries/books";
 import { uniqueSlugWithSuffix } from "@/lib/post-slug";
-import { slugify } from "@/lib/slug";
+import { libraryBookPath, slugify } from "@/lib/slug";
 import { bookFormSchema, parseCommaList } from "@/lib/validations/book";
 
 function parseFormData(formData: FormData) {
@@ -113,7 +113,7 @@ export async function updateBookAction(id: string, formData: FormData) {
   });
 
   revalidatePath("/library");
-  revalidatePath(`/library/${slug}`);
+  revalidatePath(libraryBookPath(slug));
   revalidatePath("/admin/books");
   redirect(`/admin/books/${id}/edit?saved=1`);
 }

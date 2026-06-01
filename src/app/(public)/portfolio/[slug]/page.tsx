@@ -8,6 +8,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { getProjectBySlug } from "@/lib/queries/projects";
+import { portfolioProjectPath } from "@/lib/slug";
 import { projectJsonLd, siteUrl } from "@/lib/seo";
 
 type PageProps = {
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!project) return { title: "Не найдено" };
 
   const plainDescription = project.description.replace(/[#>*_`[\]]/g, "").slice(0, 160);
-  const url = `${siteUrl}/portfolio/${project.slug}`;
+  const url = `${siteUrl}${portfolioProjectPath(project.slug)}`;
   return {
     title: project.title,
     description: plainDescription,

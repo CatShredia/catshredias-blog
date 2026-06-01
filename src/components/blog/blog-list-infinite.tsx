@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { PostTaxonomyBadges } from "@/components/blog/post-taxonomy-badges";
 import { formatDateRu, toIsoString } from "@/lib/dates";
 import type { PostListItem } from "@/lib/queries/posts";
+import { blogPostPath } from "@/lib/slug";
 
 type FilterOption = { name: string; slug: string };
 
@@ -178,7 +179,7 @@ export function BlogListInfinite({
         <ul className="grid gap-4">
           {items.map((post) => (
             <li key={post.id}>
-              <Card href={`/blog/${post.slug}`}>
+              <Card href={blogPostPath(post.slug)}>
                 <time
                   dateTime={toIsoString(post.publishedAt)}
                   className="text-xs text-muted"

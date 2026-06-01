@@ -5,6 +5,7 @@ import { resolveReportAction } from "@/app/(admin)/admin/comments/actions";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { formatDateRu } from "@/lib/dates";
+import { blogPostPath } from "@/lib/slug";
 import { listReports } from "@/lib/queries/comments";
 
 const filters = [
@@ -70,7 +71,7 @@ export default async function AdminReportsPage({
                 <p className="mt-1 text-xs">
                   {report.comment.authorName} ·{" "}
                   <Link
-                    href={`/blog/${report.comment.post.slug}`}
+                    href={blogPostPath(report.comment.post.slug)}
                     className="text-accent underline"
                   >
                     {report.comment.post.title}
