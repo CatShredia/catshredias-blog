@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { CommentSection, type CommentItem } from "@/components/blog/comment-section";
 import { PostArticleLayout } from "@/components/blog/post-article-layout";
+import { PostTrackPlayer } from "@/components/blog/post-track-player";
 import { PostTaxonomyBadges } from "@/components/blog/post-taxonomy-badges";
 import { Container } from "@/components/ui/container";
 import { SafeImage } from "@/components/ui/safe-image";
@@ -73,7 +74,19 @@ export default async function BlogPostPage({ params }: PageProps) {
         ← К блогу
       </Link>
       <article className="mt-6 max-w-none">
-        <PostArticleLayout content={post.content}>
+        <PostArticleLayout
+          content={post.content}
+          beforeContent={
+            <PostTrackPlayer
+              trackType={post.trackType}
+              trackAudioUrl={post.trackAudioUrl}
+              trackTitle={post.trackTitle}
+              trackArtist={post.trackArtist}
+              trackCoverImage={post.trackCoverImage}
+              trackEmbedSrc={post.trackEmbedSrc}
+            />
+          }
+        >
           {post.coverImage ? (
             <div className="relative mb-6 aspect-[2/1] overflow-hidden rounded-xl border border-border">
               <SafeImage

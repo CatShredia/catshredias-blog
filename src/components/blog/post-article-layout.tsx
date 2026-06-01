@@ -8,9 +8,15 @@ import { extractMarkdownHeadings } from "@/lib/markdown-headings";
 type PostArticleLayoutProps = {
   content: string;
   children: React.ReactNode;
+  /** Плеер / блок перед текстом статьи */
+  beforeContent?: React.ReactNode;
 };
 
-export function PostArticleLayout({ content, children }: PostArticleLayoutProps) {
+export function PostArticleLayout({
+  content,
+  children,
+  beforeContent,
+}: PostArticleLayoutProps) {
   const headings = useMemo(() => extractMarkdownHeadings(content), [content]);
   const [tocOpen, setTocOpen] = useState(true);
   const [mobileTocOpen, setMobileTocOpen] = useState(false);
@@ -57,6 +63,7 @@ export function PostArticleLayout({ content, children }: PostArticleLayoutProps)
       <div className="flex items-start gap-8 xl:gap-10">
         <div className="min-w-0 flex-1">
           {children}
+          {beforeContent ? <div className="mt-6">{beforeContent}</div> : null}
           <div className="mt-8">
             <MarkdownContent content={content} />
           </div>

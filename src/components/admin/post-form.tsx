@@ -1,9 +1,10 @@
 "use client";
 
-import { PostStatus } from "@prisma/client";
+import { PostStatus, PostTrackType } from "@prisma/client";
 import { useState } from "react";
 
 import { MarkdownEditor } from "@/components/admin/markdown-editor";
+import { PostTrackField } from "@/components/admin/post-track-field";
 import { Button } from "@/components/ui/button";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { generatePostSlug } from "@/lib/post-slug";
@@ -25,6 +26,12 @@ type PostFormProps = {
     slug: string;
     excerpt: string | null;
     coverImage: string | null;
+    trackType: PostTrackType;
+    trackAudioUrl: string | null;
+    trackTitle: string | null;
+    trackArtist: string | null;
+    trackCoverImage: string | null;
+    trackEmbedSrc: string | null;
     content: string;
     status: PostStatus;
     publishedAt: Date | null;
@@ -99,6 +106,15 @@ export function PostForm({
         label="Обложка поста"
         value={coverImage}
         onChange={setCoverImage}
+      />
+
+      <PostTrackField
+        initialType={post?.trackType ?? PostTrackType.NONE}
+        initialAudioUrl={post?.trackAudioUrl}
+        initialTitle={post?.trackTitle}
+        initialArtist={post?.trackArtist}
+        initialCoverImage={post?.trackCoverImage}
+        initialEmbedSrc={post?.trackEmbedSrc}
       />
 
       <div className="grid gap-4 sm:grid-cols-2">

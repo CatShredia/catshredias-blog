@@ -149,3 +149,18 @@ body {
   margin-inline: 0;
   padding-inline: 0;
 }
+
+.post-track-embed-yandex {
+  max-width: 100%;
+}
+
+.post-track-embed-yandex iframe {
+  width: 100%;
+  max-width: 614px;
+  min-height: 244px;
+}
+
+.post-track-embed-youtube iframe {
+  width: 100%;
+  max-width: 100%;
+}

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { PostTrackType } from "@prisma/client";
+
 import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -23,6 +25,12 @@ function parseFormData(formData: FormData) {
     slug: formData.get("slug"),
     excerpt: formData.get("excerpt") || undefined,
     coverImage: formData.get("coverImage") || undefined,
+    trackType: formData.get("trackType") || PostTrackType.NONE,
+    trackAudioUrl: formData.get("trackAudioUrl") || undefined,
+    trackTitle: formData.get("trackTitle") || undefined,
+    trackArtist: formData.get("trackArtist") || undefined,
+    trackCoverImage: formData.get("trackCoverImage") || undefined,
+    trackEmbedInput: formData.get("trackEmbedInput") || undefined,
     content: formData.get("content"),
     status: formData.get("status"),
     publishedAt: formData.get("publishedAt") || undefined,
@@ -54,6 +62,12 @@ export async function createPostAction(formData: FormData) {
       slug,
       excerpt: data.excerpt,
       coverImage: data.coverImage || null,
+      trackType: data.track.trackType,
+      trackAudioUrl: data.track.trackAudioUrl,
+      trackTitle: data.track.trackTitle,
+      trackArtist: data.track.trackArtist,
+      trackCoverImage: data.track.trackCoverImage,
+      trackEmbedSrc: data.track.trackEmbedSrc,
       content: data.content,
       status: data.status,
       publishedAt,
@@ -91,6 +105,12 @@ export async function updatePostAction(id: string, formData: FormData) {
       slug,
       excerpt: data.excerpt,
       coverImage: data.coverImage || null,
+      trackType: data.track.trackType,
+      trackAudioUrl: data.track.trackAudioUrl,
+      trackTitle: data.track.trackTitle,
+      trackArtist: data.track.trackArtist,
+      trackCoverImage: data.track.trackCoverImage,
+      trackEmbedSrc: data.track.trackEmbedSrc,
       content: data.content,
       status: data.status,
       publishedAt,

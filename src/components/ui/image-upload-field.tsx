@@ -11,6 +11,7 @@ type ImageUploadFieldProps = {
   value?: string;
   onChange: (url: string) => void;
   aspect?: "square" | "wide" | "free";
+  urlPlaceholder?: string;
 };
 
 export function ImageUploadField({
@@ -19,6 +20,7 @@ export function ImageUploadField({
   value = "",
   onChange,
   aspect = "wide",
+  urlPlaceholder = "или путь /api/uploads/... / полный URL",
 }: ImageUploadFieldProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +107,7 @@ export function ImageUploadField({
       </div>
       <input
         type="text"
-        placeholder="или путь /api/uploads/... / полный URL"
+        placeholder={urlPlaceholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"

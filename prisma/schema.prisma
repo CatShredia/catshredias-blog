@@ -18,6 +18,13 @@ enum PostStatus {
   SCHEDULED
 }
 
+enum PostTrackType {
+  NONE
+  UPLOAD
+  YANDEX_MUSIC
+  YOUTUBE_MUSIC
+}
+
 enum CommentStatus {
   PENDING
   APPROVED
@@ -94,8 +101,14 @@ model Post {
   slug        String     @unique
   content     String     @db.Text
   excerpt     String?
-  coverImage  String?
-  status      PostStatus @default(DRAFT)
+  coverImage     String?
+  trackType        PostTrackType @default(NONE)
+  trackAudioUrl    String?
+  trackTitle       String?
+  trackArtist      String?
+  trackCoverImage  String?
+  trackEmbedSrc    String?
+  status         PostStatus @default(DRAFT)
   publishedAt DateTime?
   authorId    String
   author      User       @relation(fields: [authorId], references: [id])
