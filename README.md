@@ -6,14 +6,14 @@
 
 ### Публичная часть
 
-| Раздел | Описание |
-|--------|----------|
-| **Главная** | Hero, биография, статус «Ищу работу» (Да/Нет) |
-| **Блог** | Лента с infinite scroll, поиск, фильтры по категориям и тегам, Markdown |
-| **Портфолио** | Проекты, фильтры по стеку и роли, PDF-резюме, ссылка на hh.ru, статус поиска работы |
-| **Библиотека** | Книги: статус (в планах / читаю / прочитано), рейтинг, теги, отзыв-пост |
-| **Контакты** | Форма обратной связи (сервер + rate limit), ссылки на соцсети |
-| **Профиль** | Регистрация, аватар, отображаемое имя; для админа — ссылка в админку |
+| Раздел         | Описание                                                                            |
+| -------------- | ----------------------------------------------------------------------------------- |
+| **Главная**    | Hero, биография, статус «Ищу работу» (Да/Нет)                                       |
+| **Блог**       | Лента с infinite scroll, поиск, фильтры по категориям и тегам, Markdown             |
+| **Портфолио**  | Проекты, фильтры по стеку и роли, PDF-резюме, ссылка на hh.ru, статус поиска работы |
+| **Библиотека** | Книги: статус (в планах / читаю / прочитано), рейтинг, теги, отзыв-пост             |
+| **Контакты**   | Форма обратной связи (сервер + rate limit), ссылки на соцсети                       |
+| **Профиль**    | Регистрация, аватар, отображаемое имя; для админа — ссылка в админку                |
 
 ### Пользователи и комментарии
 
@@ -101,13 +101,13 @@ npm run db:seed
 npm run dev
 ```
 
-| URL | Назначение |
-|-----|------------|
-| http://localhost:3000 | Сайт |
-| http://localhost:3000/admin | Админка |
-| http://localhost:3000/admin/login | Вход администратора |
+| URL                                                                    | Назначение          |
+| ---------------------------------------------------------------------- | ------------------- |
+| [http://localhost:3000](http://localhost:3000)                         | Сайт                |
+| [http://localhost:3000/admin](http://localhost:3000/admin)             | Админка             |
+| [http://localhost:3000/admin/login](http://localhost:3000/admin/login) | Вход администратора |
 
-После seed: **admin@catshredia.ru** / **changeme**
+После seed: **[admin@catshredia.ru](mailto:admin@catshredia.ru)** / **changeme**
 
 Обычные пользователи регистрируются на `/register`. Админка доступна только с ролью `ADMIN`; ссылка «Админка» — в профиле (`/profile`).
 
@@ -121,32 +121,32 @@ docker compose up -d --build
 
 ## Переменные окружения
 
-| Переменная | Обязательно | Описание |
-|------------|-------------|----------|
-| `DATABASE_URL` | да | PostgreSQL connection string |
-| `AUTH_SECRET` | да | Секрет Auth.js |
-| `AUTH_URL` | да | Базовый URL приложения |
-| `NEXT_PUBLIC_SITE_URL` | да | Публичный URL (SEO, ссылки) |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | для seed | Учётка администратора |
-| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | нет | OAuth GitHub |
-| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | нет | OAuth Google |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | нет | Turnstile для комментариев |
-| `CRON_SECRET` | нет | Защита `POST /api/cron/publish-scheduled` |
-| `NPM_REGISTRY` | нет | npm registry для `docker compose build` на VPS (например GitVerse mirror) |
-| `UPLOAD_DIR` | нет | Каталог загрузок (по умолчанию `./uploads`) |
+| Переменная                                                | Обязательно | Описание                                                                  |
+| --------------------------------------------------------- | ----------- | ------------------------------------------------------------------------- |
+| `DATABASE_URL`                                            | да          | PostgreSQL connection string                                              |
+| `AUTH_SECRET`                                             | да          | Секрет Auth.js                                                            |
+| `AUTH_URL`                                                | да          | Базовый URL приложения                                                    |
+| `NEXT_PUBLIC_SITE_URL`                                    | да          | Публичный URL (SEO, ссылки)                                               |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD`                          | для seed    | Учётка администратора                                                     |
+| `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`                   | нет         | OAuth GitHub                                                              |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`                   | нет         | OAuth Google                                                              |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | нет         | Turnstile для комментариев                                                |
+| `CRON_SECRET`                                             | нет         | Защита `POST /api/cron/publish-scheduled`                                 |
+| `NPM_REGISTRY`                                            | нет         | npm registry для `docker compose build` на VPS (например GitVerse mirror) |
+| `UPLOAD_DIR`                                              | нет         | Каталог загрузок (по умолчанию `./uploads`)                               |
 
 ## Скрипты npm
 
-| Команда | Описание |
-|---------|----------|
-| `npm run dev` | Dev-сервер |
-| `npm run build` | Prisma generate + production build |
-| `npm run start` | Production-сервер |
-| `npm run lint` | ESLint |
-| `npm run test` | Vitest (unit) |
-| `npm run db:migrate` | Миграции (`prisma migrate dev`) |
-| `npm run db:seed` | Seed: админ, посты, проекты, настройки сайта |
-| `npm run db:studio` | Prisma Studio |
+| Команда              | Описание                                     |
+| -------------------- | -------------------------------------------- |
+| `npm run dev`        | Dev-сервер                                   |
+| `npm run build`      | Prisma generate + production build           |
+| `npm run start`      | Production-сервер                            |
+| `npm run lint`       | ESLint                                       |
+| `npm run test`       | Vitest (unit)                                |
+| `npm run db:migrate` | Миграции (`prisma migrate dev`)              |
+| `npm run db:seed`    | Seed: админ, посты, проекты, настройки сайта |
+| `npm run db:studio`  | Prisma Studio                                |
 
 ## Маршруты
 
@@ -169,19 +169,19 @@ docker compose up -d --build
 
 ## API
 
-| Метод | URL | Описание |
-|-------|-----|----------|
-| GET | `/api/posts?cursor=&q=&category=&tag=&limit=` | Лента постов (cursor pagination) |
-| GET | `/api/projects?tech=&role=` | Список проектов |
-| POST | `/api/comments` | Новый комментарий (auth + Turnstile) |
-| POST | `/api/comments/[id]/report` | Жалоба на комментарий |
-| POST | `/api/contacts` | Форма обратной связи |
-| POST | `/api/user/avatar` | Аватар пользователя |
-| PATCH | `/api/user/profile` | Имя в профиле |
-| POST | `/api/admin/upload` | Загрузка файлов (admin) |
-| GET | `/api/uploads/[...path]` | Раздача загруженных файлов |
-| POST | `/api/cron/publish-scheduled` | Публикация отложенных постов |
-| GET | `/api/health` | Health check + проверка БД |
+| Метод | URL                                           | Описание                             |
+| ----- | --------------------------------------------- | ------------------------------------ |
+| GET   | `/api/posts?cursor=&q=&category=&tag=&limit=` | Лента постов (cursor pagination)     |
+| GET   | `/api/projects?tech=&role=`                   | Список проектов                      |
+| POST  | `/api/comments`                               | Новый комментарий (auth + Turnstile) |
+| POST  | `/api/comments/[id]/report`                   | Жалоба на комментарий                |
+| POST  | `/api/contacts`                               | Форма обратной связи                 |
+| POST  | `/api/user/avatar`                            | Аватар пользователя                  |
+| PATCH | `/api/user/profile`                           | Имя в профиле                        |
+| POST  | `/api/admin/upload`                           | Загрузка файлов (admin)              |
+| GET   | `/api/uploads/[...path]`                      | Раздача загруженных файлов           |
+| POST  | `/api/cron/publish-scheduled`                 | Публикация отложенных постов         |
+| GET   | `/api/health`                                 | Health check + проверка БД           |
 
 ## Структура проекта
 
@@ -210,13 +210,43 @@ catshredias-blog/
 ./scripts/backup-db.ps1
 ```
 
+### Скачать бэкап и uploads с VPS на ПК
+
+В `scripts/sync-from-vps.ps1` в начале файла задайте IP, имя бэкапа, пути и пароль локального Postgres, затем:
+
+```powershell
+cd catshredias-blog
+.\scripts\sync-from-vps.ps1
+```
+
+Скрипт: локальный `pg_dump` → скачивание `.sql.gz` и `uploads` → подтверждение `yes` → **DROP/CREATE** локальной БД → заливка дампа с VPS (порт **5432**). SSH: **ssh-agent** (`$SshPrivateKeyPath`). Отчёт в `Downloads\vps-sync\`.
+
+Передача на домашний пк:
+
+```bash
+scp deploy@147.45.246.115:~/catshredias-blog/backups/portfolio_db_20260528_235409.sql.gz "C:/Users/catsh/Downloads/"
+```
+
+все сразу:
+
+```bash
+scp -r deploy@147.45.246.115:~/catshredias-blog/backups "C:/Users/catsh/Downloads/portfolio-backups"
+```
+
+распаковка в sql:
+
+```bash
+gunzip portfolio_db_20260528_235409.sql.gz
+psql -U postgres -d portfolio_db < portfolio_db_20260528_235409.sql
+```
+
 ## Подключение к БД (DataGrip / DBeaver)
 
-| Поле | Значение |
-|------|----------|
-| Host | `localhost` |
-| Port | `55433` |
-| Database | `portfolio_db` |
+| Поле            | Значение                |
+| --------------- | ----------------------- |
+| Host            | `localhost`             |
+| Port            | `55433`                 |
+| Database        | `portfolio_db`          |
 | User / Password | `postgres` / `postgres` |
 
 ## Деплой
@@ -234,14 +264,14 @@ Runews на том же сервере: [Coursework/docs/server-setup.md](../Cou
 
 ## Статус по этапам ТЗ
 
-- [x] **1** — каркас, Prisma, Auth.js, Docker
-- [x] **2** — публичный UI, темы
-- [x] **3** — CRUD админки, Markdown-редактор
-- [x] **4** — блог: API, infinite scroll, SEO, фильтры
-- [x] **5** — портфолио: кейсы, PDF, hh.ru
-- [x] **6** — комментарии, Turnstile, модерация, жалобы
-- [x] **7** — CI, тесты, логи, бэкапы, health
-- [ ] **8** — продакшен-деплой и финальная передача ([docs/deploy-vps.md](docs/deploy-vps.md))
+- **1** — каркас, Prisma, Auth.js, Docker
+- **2** — публичный UI, темы
+- **3** — CRUD админки, Markdown-редактор
+- **4** — блог: API, infinite scroll, SEO, фильтры
+- **5** — портфолио: кейсы, PDF, hh.ru
+- **6** — комментарии, Turnstile, модерация, жалобы
+- **7** — CI, тесты, логи, бэкапы, health
+- **8** — продакшен-деплой и финальная передача ([docs/deploy-vps.md](docs/deploy-vps.md))
 
 ## Лицензия
 
