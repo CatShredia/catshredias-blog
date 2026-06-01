@@ -86,7 +86,7 @@ npm run db:seed
 
 PostgreSQL слушает порт **55433** (не пересекается с Runews на 55432).
 
-В проекте **одна миграция** — `prisma/migrations/20260524000000_init`. На чистой БД достаточно `npx prisma migrate deploy` (или `npm run db:migrate` в dev).
+Миграции в `prisma/migrations/` (сейчас шесть: `init`, optional sections проектов, треки постов, уведомления админки). На чистой БД: `npx prisma migrate deploy` (или `npm run db:migrate` в dev). На VPS миграции только через `docker compose build migrate && docker compose --profile tools run --rm migrate` — не из устаревшего образа.
 
 Если раньше уже применялись старые миграции, сбросьте БД и накатите заново:
 

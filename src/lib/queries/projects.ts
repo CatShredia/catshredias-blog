@@ -14,6 +14,24 @@ const projectListSelect = {
   demoUrl: true,
 } satisfies Prisma.ProjectSelect;
 
+const projectDetailSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  description: true,
+  problem: true,
+  solution: true,
+  result: true,
+  stack: true,
+  roles: true,
+  repoUrl: true,
+  demoUrl: true,
+} satisfies Prisma.ProjectSelect;
+
+export type ProjectDetail = Prisma.ProjectGetPayload<{
+  select: typeof projectDetailSelect;
+}>;
+
 export type ProjectListItem = Prisma.ProjectGetPayload<{
   select: typeof projectListSelect;
 }>;
@@ -32,9 +50,12 @@ export async function listProjects(filters?: {
   });
 }
 
-export async function getProjectBySlug(slug: string) {
+export async function getProjectBySlug(slug: string): Promise<ProjectDetail | null> {
   for (const candidate of routeSlugCandidates(slug)) {
-    const project = await prisma.project.findUnique({ where: { slug: candidate } });
+    const project = await prisma.project.findUnique({
+      where: { slug: candidate },
+      select: projectDetailSelect,
+    });
     if (project) return project;
   }
   return null;

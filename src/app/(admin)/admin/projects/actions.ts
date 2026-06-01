@@ -36,7 +36,11 @@ export async function createProjectAction(formData: FormData) {
   const data = parseFormData(formData);
   const slug = await uniqueSlugWithSuffix(
     data.slug || data.title,
-    async (candidate) => !!(await prisma.project.findUnique({ where: { slug: candidate } })),
+    async (candidate) =>
+      !!(await prisma.project.findUnique({
+        where: { slug: candidate },
+        select: { id: true },
+      })),
     "project",
   );
 
@@ -66,6 +70,7 @@ export async function updateProjectAction(id: string, formData: FormData) {
   const slug = slugify(data.slug) || slugify(data.title);
 
   const existing = await prisma.project.findFirst({
+    select: { slug: true },
     where: { slug, NOT: { id } },
   });
   if (existing) {

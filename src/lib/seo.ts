@@ -39,7 +39,7 @@ export function websiteJsonLd() {
   };
 }
 
-export function projectJsonLd(project: Project) {
+export function projectJsonLd(project: Pick<Project, "title" | "description" | "slug">) {
   return {
     "@context": "https://schema.org",
     "@type": "CreativeWork",

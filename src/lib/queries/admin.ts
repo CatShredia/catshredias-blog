@@ -1,5 +1,33 @@
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slug";
+
+const adminProjectListSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  stack: true,
+  updatedAt: true,
+} satisfies Prisma.ProjectSelect;
+
+const adminProjectDetailSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  description: true,
+  problem: true,
+  solution: true,
+  result: true,
+  stack: true,
+  roles: true,
+  repoUrl: true,
+  demoUrl: true,
+} satisfies Prisma.ProjectSelect;
+
+export type AdminProjectDetail = Prisma.ProjectGetPayload<{
+  select: typeof adminProjectDetailSelect;
+}>;
 
 export async function listAdminPosts() {
   return prisma.post.findMany({
@@ -19,11 +47,17 @@ export async function getAdminPost(id: string) {
 }
 
 export async function listAdminProjects() {
-  return prisma.project.findMany({ orderBy: { updatedAt: "desc" } });
+  return prisma.project.findMany({
+    select: adminProjectListSelect,
+    orderBy: { updatedAt: "desc" },
+  });
 }
 
 export async function getAdminProject(id: string) {
-  return prisma.project.findUnique({ where: { id } });
+  return prisma.project.findUnique({
+    where: { id },
+    select: adminProjectDetailSelect,
+  });
 }
 
 export async function upsertCategories(names: string[]) {

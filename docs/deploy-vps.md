@@ -313,10 +313,14 @@ rm -rf ~/catshredias-blog/node_modules
 Применить миграции и seed (первый раз или после `down -v`):
 
 ```bash
+# Миграции берутся из образа migrate — перед deploy пересоберите его вместе с web
+docker compose build migrate web
 docker compose --profile tools run --rm migrate
 docker compose --profile tools run --rm seed
-docker compose up -d web
+docker compose up -d --force-recreate web
 ```
+
+В логе `migrate` должно быть **6** миграций (не «1 migration found» — это старый образ без `20260601`–`20260604`).
 
 Сервисы `migrate` и `seed` используют builder-образ с полным `node_modules` (Prisma **6.x**). **Не используйте `docker compose exec web npx prisma`** — в production-контейнере `npx` скачает Prisma 7.
 
@@ -639,7 +643,8 @@ docker stats --no-stream
 | Ссылки в email ведут на localhost        | Неверный `PUBLIC_URL`                  | `.env` → `https://runews.catshredia.ru`, `docker compose up -d api web` |
 | Auth.js / OAuth ошибки                   | `AUTH_URL` не совпадает с браузером    | `AUTH_URL=https://catshredia.ru`                                        |
 | WebSocket комментариев Runews обрывается | Нет Upgrade в Nginx                    | Блок `location /hubs/` (см. §7.1)                                       |
-| Prisma ошибка при старте blog            | Нет миграций                           | `docker compose --profile tools run --rm migrate`                     |
+| Prisma ошибка при старте blog            | Нет миграций                           | `docker compose build migrate && docker compose --profile tools run --rm migrate` |
+| `P2022` / `Project.hhUrl does not exist` | Старый образ `web` (Prisma ≠ БД)       | `git pull`, `docker compose build web`, `migrate`, `up -d --force-recreate web` |
 
 
 ---
