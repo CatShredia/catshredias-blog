@@ -30,6 +30,8 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:3000:3000"
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-portfolio_db}
       AUTH_SECRET: ${AUTH_SECRET}
@@ -37,6 +39,10 @@ services:
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@catshredia.ru}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-changeme}
+      CRON_SECRET: ${CRON_SECRET:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
     volumes:
       - uploads:/app/uploads
 

@@ -35,6 +35,7 @@ export async function sendTelegramMessage({
       return false;
     }
 
+    logger.info("Telegram sendMessage ok", { chatId });
     return true;
   } catch (error) {
     logger.error("Telegram sendMessage error", {

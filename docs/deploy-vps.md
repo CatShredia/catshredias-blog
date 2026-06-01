@@ -188,7 +188,17 @@ ADMIN_PASSWORD=НАДЁЖНЫЙ_ПАРОЛЬ_АДМИНКИ
 # CRON_SECRET=...
 # NEXT_PUBLIC_TURNSTILE_SITE_KEY=...
 # TURNSTILE_SECRET_KEY=...
+TELEGRAM_BOT_TOKEN=токен_от_BotFather
+TELEGRAM_CHAT_ID=ваш_numeric_chat_id
 ```
+
+После правки `.env` пересоздайте контейнер web, иначе Telegram-переменные не подхватятся:
+
+```bash
+docker compose up -d --force-recreate web
+```
+
+В админке `/admin/notifications` включите «Отправлять в Telegram» и галочку «Контакты».
 
 Сгенерировать секрет:
 

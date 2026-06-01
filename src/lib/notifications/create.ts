@@ -3,6 +3,8 @@ import type { AdminNotificationType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { siteUrl } from "@/lib/seo";
 
+import { logger } from "@/lib/logger";
+
 import { getNotificationSettings } from "./settings";
 import { sendTelegramMessageAsync } from "./telegram";
 
@@ -43,7 +45,17 @@ export async function createAdminNotification(input: CreateNotificationInput) {
     input.telegram === true ||
     (typeof input.telegram === "object" && input.telegram?.enabled !== false);
 
-  if (!wantTelegram || !settings.effectiveTelegramEnabled) {
+  if (!wantTelegram) {
+    return notification;
+  }
+
+  if (!settings.effectiveTelegramEnabled) {
+    logger.info("Telegram skipped: disabled in settings or missing TELEGRAM_* in env", {
+      type: input.type,
+      telegramEnabled: settings.telegramEnabled,
+      hasEnvToken: Boolean(process.env.TELEGRAM_BOT_TOKEN?.trim()),
+      hasChatId: Boolean(settings.effectiveTelegramChatId),
+    });
     return notification;
   }
 
@@ -55,6 +67,11 @@ export async function createAdminNotification(input: CreateNotificationInput) {
         : settings.telegramComments;
 
   if (!typeFlag || !settings.effectiveTelegramChatId) {
+    logger.info("Telegram skipped: type disabled or no chat id", {
+      type: input.type,
+      typeFlag,
+      chatId: settings.effectiveTelegramChatId,
+    });
     return notification;
   }
 
