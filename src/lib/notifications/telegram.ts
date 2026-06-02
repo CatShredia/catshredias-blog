@@ -1,5 +1,25 @@
 import { logger } from "@/lib/logger";
 
+import { telegramFetch } from "./telegram-fetch";
+
+function logTelegramFetchError(error: unknown) {
+  const payload: Record<string, unknown> = {
+    error: error instanceof Error ? error.message : "unknown",
+  };
+  if (error instanceof Error) {
+    payload.name = error.name;
+    const cause = error.cause;
+    if (cause instanceof Error) {
+      payload.cause = cause.message;
+      const code = (cause as NodeJS.ErrnoException).code;
+      if (code) payload.causeCode = code;
+    } else if (cause && typeof cause === "object" && "code" in cause) {
+      payload.causeCode = String((cause as { code?: unknown }).code);
+    }
+  }
+  logger.error("Telegram sendMessage error", payload);
+}
+
 type TelegramSendOptions = {
   chatId: string;
   text: string;
@@ -13,7 +33,7 @@ export async function sendTelegramMessage({
   if (!token || !chatId) return false;
 
   try {
-    const response = await fetch(
+    const response = await telegramFetch(
       `https://api.telegram.org/bot${token}/sendMessage`,
       {
         method: "POST",
@@ -38,9 +58,7 @@ export async function sendTelegramMessage({
     logger.info("Telegram sendMessage ok", { chatId });
     return true;
   } catch (error) {
-    logger.error("Telegram sendMessage error", {
-      error: error instanceof Error ? error.message : "unknown",
-    });
+    logTelegramFetchError(error);
     return false;
   }
 }

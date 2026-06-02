@@ -190,6 +190,7 @@ ADMIN_PASSWORD=НАДЁЖНЫЙ_ПАРОЛЬ_АДМИНКИ
 # TURNSTILE_SECRET_KEY=...
 TELEGRAM_BOT_TOKEN=токен_от_BotFather
 TELEGRAM_CHAT_ID=ваш_numeric_chat_id
+# TELEGRAM_PROXY_URL=http://host.docker.internal:7890
 ```
 
 После правки `.env` пересоздайте контейнер web, иначе Telegram-переменные не подхватятся:
@@ -535,9 +536,73 @@ crontab -e
 ```env
 TELEGRAM_BOT_TOKEN=123456:ABC...
 TELEGRAM_CHAT_ID=ваш_chat_id
+# если api.telegram.org недоступен с VPS — прокси только для бота:
+# TELEGRAM_PROXY_URL=http://127.0.0.1:7890
+# TELEGRAM_PROXY_URL=socks5://user:pass@proxy.example.com:1080
 ```
 
 Получить `chat_id`: напишите боту `/start`, затем `curl "https://api.telegram.org/bot<TOKEN>/getUpdates"`. Включение типов уведомлений — в админке `/admin/notifications`.
+
+#### Прокси для Telegram
+
+Переменная **`TELEGRAM_PROXY_URL`** (приоритет) или общая **`HTTPS_PROXY`** — используются **только** при вызове `api.telegram.org`, остальной трафик сайта через них не идёт.
+
+| Где крутится прокси | Пример `TELEGRAM_PROXY_URL` в `.env` на VPS |
+| ------------------- | ------------------------------------------- |
+| На том же VPS (tinyproxy, 3proxy) | `http://127.0.0.1:3128` — из контейнера `127.0.0.1` это **сам контейнер**, не хост. Лучше IP хоста: `http://172.17.0.1:3128` или `extra_hosts` ниже |
+| Прокси на вашем ПК / другом сервере | `http://IP_ПРОКСИ:порт` или `socks5://...` |
+| Clash / v2ray на хосте | Порт HTTP-входа, часто `7890`: с Docker на Linux — `http://172.17.0.1:7890` |
+
+Чтобы из контейнера достучаться до прокси на **хосте**, в `docker-compose.yml` у `web` можно добавить:
+
+```yaml
+extra_hosts:
+  - "host.docker.internal:host-gateway"
+```
+
+Тогда в `.env`: `TELEGRAM_PROXY_URL=http://host.docker.internal:7890`.
+
+После правки: `docker compose up -d --force-recreate web`. В логах при первой отправке: `Telegram requests use proxy`.
+
+Проверка **с учётом прокси** (на VPS, подставьте URL из `.env`):
+
+```bash
+docker compose exec -e TELEGRAM_PROXY_URL="$TELEGRAM_PROXY_URL" web node -e "
+const { ProxyAgent, fetch } = require('undici');
+const u = process.env.TELEGRAM_PROXY_URL;
+const t = process.env.TELEGRAM_BOT_TOKEN;
+if (!u || !t) { console.error('need TELEGRAM_PROXY_URL and TELEGRAM_BOT_TOKEN'); process.exit(1); }
+fetch('https://api.telegram.org/bot'+t+'/getMe', { dispatcher: new ProxyAgent(u) })
+  .then(r => r.text()).then(console.log).catch(e => { console.error(e); process.exit(1); });
+"
+```
+
+`wget` из диагностики ниже **не** использует `TELEGRAM_PROXY_URL` — для проверки без прокси или используйте команду `node` выше.
+
+**Диагностика** (на VPS, из каталога проекта):
+
+```bash
+# 1) Переменные попали в контейнер (не пустые)?
+docker compose exec web printenv TELEGRAM_BOT_TOKEN TELEGRAM_CHAT_ID
+
+# 2) Сеть до Telegram из контейнера (должен вернуть JSON с "ok":true)
+docker compose exec web wget -qO- --timeout=10 \
+  "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe"
+
+# 3) Ручная отправка (подставьте chat_id из .env)
+docker compose exec web wget -qO- --timeout=10 --post-data='{"chat_id":"ВАШ_CHAT_ID","text":"test"}' \
+  --header='Content-Type: application/json' \
+  "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage"
+```
+
+| Лог / симптом | Что значит |
+| ------------- | ---------- |
+| `Telegram skipped: disabled...` | В `/admin/notifications` выключен Telegram или нет `TELEGRAM_*` в env контейнера |
+| `Telegram sendMessage failed` + `status` / `body` | Сеть есть, ошибка API: неверный токен, бот не запущен (`/start`), неверный `chat_id`, бот заблокирован |
+| `Telegram sendMessage error` + `fetch failed` | **Нет исходящего HTTPS** до `api.telegram.org` (фаервол VPS, блокировка провайдера, DNS в Docker). В логе после деплоя смотрите `cause` / `causeCode` (`ENOTFOUND`, `ETIMEDOUT`, `ECONNREFUSED`) |
+| `Telegram sendMessage ok` | Отправка прошла |
+
+После правки `.env`: `docker compose up -d --force-recreate web` (не только `restart`).
 
 ---
 
@@ -645,6 +710,7 @@ docker stats --no-stream
 | WebSocket комментариев Runews обрывается | Нет Upgrade в Nginx                    | Блок `location /hubs/` (см. §7.1)                                       |
 | Prisma ошибка при старте blog            | Нет миграций                           | `docker compose build migrate && docker compose --profile tools run --rm migrate` |
 | `P2022` / `Project.hhUrl does not exist` | Старый образ `web` (Prisma ≠ БД)       | `git pull`, `docker compose build web`, `migrate`, `up -d --force-recreate web` |
+| Telegram `fetch failed` в логах          | Нет доступа к `api.telegram.org` из контейнера | `TELEGRAM_PROXY_URL` в `.env`, §10 «Прокси»; `force-recreate web` |
 
 
 ---

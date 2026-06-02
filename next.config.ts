@@ -13,6 +13,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  serverExternalPackages: ["undici"],
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "**" },
