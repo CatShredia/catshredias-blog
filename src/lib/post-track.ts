@@ -9,7 +9,8 @@ const YOUTUBE_HOSTS = new Set([
   "youtu.be",
 ]);
 
-const AUDIO_PATH_RE = /^\/api\/uploads\/[\w.-]+\.(mp3|mpeg|ogg|wav|webm|m4a|mp4)$/i;
+const AUDIO_PATH_RE =
+  /^\/api\/uploads\/[\w.-]+\.(mp3|mpeg|ogg|wav|webm|m4a|mp4|flac)$/i;
 
 export function isAllowedAudioUploadPath(path: string) {
   const trimmed = path.trim();
@@ -125,7 +126,9 @@ export function resolvePostTrackPayload(data: {
   if (data.trackType === PostTrackType.UPLOAD) {
     const url = data.trackAudioUrl?.trim() ?? "";
     if (!url || !isAllowedAudioUploadPath(url)) {
-      throw new Error("Загрузите аудиофайл на сервер (mp3, ogg, wav, webm, m4a)");
+      throw new Error(
+        "Загрузите аудиофайл на сервер (mp3, ogg, wav, webm, m4a, flac)",
+      );
     }
 
     const title = data.trackTitle?.trim() ?? "";

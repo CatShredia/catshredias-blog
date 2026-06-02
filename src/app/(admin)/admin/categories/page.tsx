@@ -5,18 +5,16 @@ import {
   deleteCategoryAction,
   updateCategoryAction,
 } from "@/app/(admin)/admin/categories/actions";
-import {
-  AdminTaxonomyCreateForm,
-  AdminTaxonomyRowForm,
-} from "@/components/admin/admin-taxonomy-form";
-import { Container } from "@/components/ui/container";
+import { AdminTaxonomyCreateForm } from "@/components/admin/admin-taxonomy-form";
+import { AdminTaxonomyTable } from "@/components/admin/admin-taxonomy-table";
+import { AdminContainer } from "@/components/ui/admin-container";
 import { listAdminCategories } from "@/lib/queries/admin";
 
 export default async function AdminCategoriesPage() {
   const categories = await listAdminCategories();
 
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <Link href="/admin/posts" className="text-sm text-muted hover:text-foreground">
         ← К постам
       </Link>
@@ -33,22 +31,18 @@ export default async function AdminCategoriesPage() {
         />
       </div>
 
-      <ul className="mt-6 space-y-3">
-        {categories.map((category) => (
-          <AdminTaxonomyRowForm
-            key={category.id}
-            id={category.id}
-            name={category.name}
-            slug={category.slug}
-            postsCount={category._count.posts}
-            updateAction={updateCategoryAction.bind(null, category.id)}
-            deleteAction={deleteCategoryAction}
-          />
-        ))}
-      </ul>
-      {categories.length === 0 ? (
-        <p className="mt-6 text-sm text-muted">Категорий пока нет.</p>
-      ) : null}
-    </Container>
+      <div className="mt-6">
+        <AdminTaxonomyTable
+          rows={categories.map((category) => ({
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+            postsCount: category._count.posts,
+            updateAction: updateCategoryAction.bind(null, category.id),
+          }))}
+          deleteAction={deleteCategoryAction}
+        />
+      </div>
+    </AdminContainer>
   );
 }

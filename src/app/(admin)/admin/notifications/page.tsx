@@ -8,7 +8,7 @@ import {
 } from "@/app/(admin)/admin/notifications/actions";
 import { NotificationSettingsForm } from "@/components/admin/notification-settings-form";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 import { formatDateRu } from "@/lib/dates";
 import {
   countUnreadNotifications,
@@ -56,7 +56,7 @@ export default async function AdminNotificationsPage({ searchParams }: PageProps
   const commentDigestMode = shouldDigestComments(settings.commentMode);
 
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Уведомления</h1>
@@ -193,6 +193,6 @@ export default async function AdminNotificationsPage({ searchParams }: PageProps
           })
         )}
       </ul>
-    </Container>
+    </AdminContainer>
   );
 }

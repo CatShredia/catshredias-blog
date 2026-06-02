@@ -1,5 +1,5 @@
 import { AdminPostsTable } from "@/components/admin/admin-posts-table";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 import { ButtonLink } from "@/components/ui/button";
 import { listAdminPosts } from "@/lib/queries/admin";
 
@@ -7,7 +7,7 @@ export default async function AdminPostsPage() {
   const posts = await listAdminPosts();
 
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Посты</h1>
         <div className="flex flex-wrap gap-2">
@@ -28,6 +28,6 @@ export default async function AdminPostsPage() {
           updatedAt: post.updatedAt.toISOString(),
         }))}
       />
-    </Container>
+    </AdminContainer>
   );
 }

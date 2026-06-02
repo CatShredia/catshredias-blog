@@ -2,11 +2,11 @@ import Link from "next/link";
 
 import { createBookAction } from "@/app/(admin)/admin/books/actions";
 import { BookForm } from "@/components/admin/book-form";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 
 export default function NewBookPage() {
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <Link href="/admin/books" className="text-sm text-muted hover:text-foreground">
         ← Библиотека
       </Link>
@@ -14,6 +14,6 @@ export default function NewBookPage() {
       <div className="mt-8">
         <BookForm mode="create" saveAction={createBookAction} />
       </div>
-    </Container>
+    </AdminContainer>
   );
 }

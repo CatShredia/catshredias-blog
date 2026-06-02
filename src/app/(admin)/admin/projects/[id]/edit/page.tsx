@@ -7,7 +7,7 @@ import {
 } from "@/app/(admin)/admin/projects/actions";
 import { ProjectForm } from "@/components/admin/project-form";
 import { Button } from "@/components/ui/button";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 import { getAdminProject } from "@/lib/queries/admin";
 
 type PageProps = {
@@ -27,7 +27,7 @@ export default async function EditProjectPage({
   const updateAction = updateProjectAction.bind(null, id);
 
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <Link
         href="/admin/projects"
         className="text-sm text-muted hover:text-foreground"
@@ -50,6 +50,6 @@ export default async function EditProjectPage({
           Удалить проект
         </Button>
       </form>
-    </Container>
+    </AdminContainer>
   );
 }

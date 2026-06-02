@@ -2,14 +2,24 @@
 
 import { PostStatus, PostTrackType } from "@prisma/client";
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useEffect, useMemo, useRef, useActionState, useState } from "react";
 
 import type { PostFormState } from "@/app/(admin)/admin/posts/actions";
 import { MarkdownEditor } from "@/components/admin/markdown-editor";
 import { PostTrackField } from "@/components/admin/post-track-field";
 import { Button } from "@/components/ui/button";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
+import { clearEditorDraft } from "@/lib/editor-draft";
 import { generatePostSlug } from "@/lib/post-slug";
+import {
+  clearPostFormDraft,
+  defaultPostFormDraft,
+  postFormDraftFromPost,
+  postFormDraftStorageKey,
+  readPostFormDraft,
+  writePostFormDraft,
+  type PostFormDraft,
+} from "@/lib/post-form-draft";
 
 function preventEnterSubmit(event: React.KeyboardEvent<HTMLInputElement>) {
   if (event.key === "Enter") {
@@ -17,35 +27,49 @@ function preventEnterSubmit(event: React.KeyboardEvent<HTMLInputElement>) {
   }
 }
 
+type PostFormPost = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  coverImage: string | null;
+  trackType: PostTrackType;
+  trackAudioUrl: string | null;
+  trackTitle: string | null;
+  trackArtist: string | null;
+  trackCoverImage: string | null;
+  trackEmbedSrc: string | null;
+  content: string;
+  status: PostStatus;
+  publishedAt: Date | null;
+  categories: { name: string }[];
+  tags: { name: string }[];
+};
+
 type PostFormProps = {
   mode: "create" | "edit";
   saveAction: (
     prev: PostFormState,
     formData: FormData,
   ) => Promise<PostFormState>;
-  /** После ?saved=1 — не подставлять старый localStorage-черновик */
+  /** После ?saved=1 — сбросить черновики и взять данные с сервера */
   syncContentFromServer?: boolean;
-  post?: {
-    id: string;
-    title: string;
-    slug: string;
-    excerpt: string | null;
-    coverImage: string | null;
-    trackType: PostTrackType;
-    trackAudioUrl: string | null;
-    trackTitle: string | null;
-    trackArtist: string | null;
-    trackCoverImage: string | null;
-    trackEmbedSrc: string | null;
-    content: string;
-    status: PostStatus;
-    publishedAt: Date | null;
-    categories: { name: string }[];
-    tags: { name: string }[];
-  };
+  post?: PostFormPost;
 };
 
-const initialState: PostFormState = {};
+const initialActionState: PostFormState = {};
+
+function loadDraft(
+  storageKey: string,
+  serverFallback: PostFormDraft,
+  options: { syncFromServer: boolean },
+) {
+  if (options.syncFromServer) {
+    clearPostFormDraft(storageKey);
+    return serverFallback;
+  }
+  return readPostFormDraft(storageKey, serverFallback);
+}
 
 export function PostForm({
   mode,
@@ -53,17 +77,51 @@ export function PostForm({
   saveAction,
   syncContentFromServer = false,
 }: PostFormProps) {
-  const [state, action, pending] = useActionState(saveAction, initialState);
-  const [title, setTitle] = useState(post?.title ?? "");
-  const [slug, setSlug] = useState(post?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(mode === "edit");
-  const [coverImage, setCoverImage] = useState(post?.coverImage ?? "");
-
+  const [state, action, pending] = useActionState(saveAction, initialActionState);
   const draftKey = post ? `draft-post-${post.id}` : "draft-post-new";
+  const metaStorageKey = postFormDraftStorageKey(draftKey);
 
-  const publishedAtDefault = post?.publishedAt
-    ? new Date(post.publishedAt).toISOString().slice(0, 16)
-    : "";
+  const serverFallback = useMemo(
+    () =>
+      post
+        ? postFormDraftFromPost(post)
+        : defaultPostFormDraft({ slugTouched: false }),
+    [post],
+  );
+
+  const [draft, setDraft] = useState<PostFormDraft>(() =>
+    loadDraft(metaStorageKey, serverFallback, {
+      syncFromServer: syncContentFromServer,
+    }),
+  );
+
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+    if (syncContentFromServer) return;
+    setDraft(readPostFormDraft(metaStorageKey, serverFallback));
+  }, [metaStorageKey, serverFallback, syncContentFromServer]);
+
+  useEffect(() => {
+    if (syncContentFromServer) {
+      clearPostFormDraft(metaStorageKey);
+      clearEditorDraft(draftKey);
+      setDraft(serverFallback);
+    }
+  }, [syncContentFromServer, metaStorageKey, draftKey, serverFallback]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      writePostFormDraft(metaStorageKey, draft);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [draft, metaStorageKey]);
+
+  function updateDraft(partial: Partial<PostFormDraft>) {
+    setDraft((prev) => ({ ...prev, ...partial }));
+  }
 
   return (
     <form action={action} className="space-y-6">
@@ -73,12 +131,13 @@ export function PostForm({
           <input
             name="title"
             required
-            value={title}
+            value={draft.title}
             onChange={(event) => {
-              setTitle(event.target.value);
-              if (!slugTouched) {
-                setSlug(generatePostSlug(event.target.value));
-              }
+              const title = event.target.value;
+              updateDraft({
+                title,
+                slug: draft.slugTouched ? draft.slug : generatePostSlug(title),
+              });
             }}
             onKeyDown={preventEnterSubmit}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
@@ -89,10 +148,12 @@ export function PostForm({
           <input
             name="slug"
             required
-            value={slug}
+            value={draft.slug}
             onChange={(event) => {
-              setSlugTouched(true);
-              setSlug(event.target.value);
+              updateDraft({
+                slug: event.target.value,
+                slugTouched: true,
+              });
             }}
             onKeyDown={preventEnterSubmit}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3 font-mono text-sm"
@@ -104,7 +165,8 @@ export function PostForm({
         <label className="mb-1 block text-sm font-medium">Краткое описание</label>
         <input
           name="excerpt"
-          defaultValue={post?.excerpt ?? ""}
+          value={draft.excerpt}
+          onChange={(event) => updateDraft({ excerpt: event.target.value })}
           className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
         />
       </div>
@@ -112,17 +174,13 @@ export function PostForm({
       <ImageUploadField
         name="coverImage"
         label="Обложка поста"
-        value={coverImage}
-        onChange={setCoverImage}
+        value={draft.coverImage}
+        onChange={(coverImage) => updateDraft({ coverImage })}
       />
 
       <PostTrackField
-        initialType={post?.trackType ?? PostTrackType.NONE}
-        initialAudioUrl={post?.trackAudioUrl}
-        initialTitle={post?.trackTitle}
-        initialArtist={post?.trackArtist}
-        initialCoverImage={post?.trackCoverImage}
-        initialEmbedSrc={post?.trackEmbedSrc}
+        value={draft.track}
+        onChange={(track) => updateDraft({ track })}
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -130,7 +188,10 @@ export function PostForm({
           <label className="mb-1 block text-sm font-medium">Статус</label>
           <select
             name="status"
-            defaultValue={post?.status ?? PostStatus.DRAFT}
+            value={draft.status}
+            onChange={(event) =>
+              updateDraft({ status: event.target.value as PostStatus })
+            }
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
           >
             <option value={PostStatus.DRAFT}>Черновик</option>
@@ -145,7 +206,10 @@ export function PostForm({
           <input
             type="datetime-local"
             name="publishedAt"
-            defaultValue={publishedAtDefault}
+            value={draft.publishedAt}
+            onChange={(event) =>
+              updateDraft({ publishedAt: event.target.value })
+            }
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
           />
           <p className="mt-1 text-xs text-muted">
@@ -162,7 +226,8 @@ export function PostForm({
           </label>
           <input
             name="categories"
-            defaultValue={post?.categories.map((c) => c.name).join(", ") ?? ""}
+            value={draft.categories}
+            onChange={(event) => updateDraft({ categories: event.target.value })}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
           />
           <p className="mt-1 text-xs text-muted">
@@ -177,7 +242,8 @@ export function PostForm({
           </label>
           <input
             name="tags"
-            defaultValue={post?.tags.map((t) => t.name).join(", ") ?? ""}
+            value={draft.tags}
+            onChange={(event) => updateDraft({ tags: event.target.value })}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
           />
           <p className="mt-1 text-xs text-muted">
@@ -194,8 +260,8 @@ export function PostForm({
           name="content"
           initialValue={post?.content ?? ""}
           draftKey={draftKey}
-          resetDraftOnMount={mode === "create"}
           syncFromServerOnMount={syncContentFromServer}
+          layout="wide"
         />
         {state.fieldErrors?.content ? (
           <p className="mt-2 text-sm text-red-600">
@@ -209,6 +275,11 @@ export function PostForm({
           {state.error}
         </p>
       ) : null}
+
+      <p className="text-xs text-muted">
+        Черновик формы и текста сохраняется в браузере при вводе (в том числе после
+        ошибки или перезагрузки страницы).
+      </p>
 
       <Button type="submit" disabled={pending}>
         {pending

@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { parseAudioMetadata } from "@/lib/audio-metadata";
-import { trackEmbedInputFromStored } from "@/lib/post-track";
+import type { PostFormTrackDraft } from "@/lib/post-form-draft";
 
 const trackTypeOptions: { value: PostTrackType; label: string }[] = [
   { value: PostTrackType.NONE, label: "Без трека" },
@@ -14,13 +14,12 @@ const trackTypeOptions: { value: PostTrackType; label: string }[] = [
   { value: PostTrackType.YOUTUBE_MUSIC, label: "YouTube Music" },
 ];
 
+const AUDIO_ACCEPT =
+  "audio/mpeg,audio/mp3,audio/ogg,audio/wav,audio/webm,audio/mp4,audio/x-m4a,audio/flac,audio/x-flac,.mp3,.ogg,.wav,.webm,.m4a,.flac";
+
 type PostTrackFieldProps = {
-  initialType?: PostTrackType;
-  initialAudioUrl?: string | null;
-  initialTitle?: string | null;
-  initialArtist?: string | null;
-  initialCoverImage?: string | null;
-  initialEmbedSrc?: string | null;
+  value: PostFormTrackDraft;
+  onChange: (value: PostFormTrackDraft) => void;
 };
 
 async function uploadAdminFile(file: File): Promise<string> {
@@ -41,51 +40,61 @@ async function uploadAdminFile(file: File): Promise<string> {
   return data.url;
 }
 
-export function PostTrackField({
-  initialType = PostTrackType.NONE,
-  initialAudioUrl = "",
-  initialTitle = "",
-  initialArtist = "",
-  initialCoverImage = "",
-  initialEmbedSrc = null,
-}: PostTrackFieldProps) {
-  const [trackType, setTrackType] = useState(initialType);
-  const [audioUrl, setAudioUrl] = useState(initialAudioUrl ?? "");
-  const [trackTitle, setTrackTitle] = useState(initialTitle ?? "");
-  const [trackArtist, setTrackArtist] = useState(initialArtist ?? "");
-  const [coverImage, setCoverImage] = useState(initialCoverImage ?? "");
-  const [embedInput, setEmbedInput] = useState(
-    trackEmbedInputFromStored(initialType, initialEmbedSrc),
-  );
+export function PostTrackField({ value, onChange }: PostTrackFieldProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const {
+    trackType,
+    audioUrl,
+    trackTitle,
+    trackArtist,
+    coverImage,
+    embedInput,
+  } = value;
+
+  function patch(partial: Partial<PostFormTrackDraft>) {
+    onChange({ ...value, ...partial });
+  }
+
   function clearUploadMeta() {
-    setAudioUrl("");
-    setTrackTitle("");
-    setTrackArtist("");
-    setCoverImage("");
+    patch({
+      audioUrl: "",
+      trackTitle: "",
+      trackArtist: "",
+      coverImage: "",
+    });
   }
 
   function selectType(next: PostTrackType) {
-    setTrackType(next);
     setError(null);
     if (next === PostTrackType.NONE) {
-      clearUploadMeta();
-      setEmbedInput("");
-    } else if (next !== PostTrackType.UPLOAD) {
-      clearUploadMeta();
-    } else {
-      setEmbedInput("");
+      onChange({
+        trackType: next,
+        audioUrl: "",
+        trackTitle: "",
+        trackArtist: "",
+        coverImage: "",
+        embedInput: "",
+      });
+      return;
     }
-  }
-
-  function applyMetadata(meta: {
-    title?: string;
-    artist?: string;
-  }) {
-    if (meta.title) setTrackTitle(meta.title);
-    if (meta.artist) setTrackArtist(meta.artist);
+    if (next !== PostTrackType.UPLOAD) {
+      onChange({
+        trackType: next,
+        audioUrl: "",
+        trackTitle: "",
+        trackArtist: "",
+        coverImage: "",
+        embedInput: value.embedInput,
+      });
+      return;
+    }
+    onChange({
+      ...value,
+      trackType: next,
+      embedInput: "",
+    });
   }
 
   async function uploadAudio(file: File) {
@@ -94,20 +103,25 @@ export function PostTrackField({
 
     try {
       const meta = await parseAudioMetadata(file);
-      applyMetadata(meta);
-
       const url = await uploadAdminFile(file);
-      setAudioUrl(url);
-      setTrackType(PostTrackType.UPLOAD);
 
+      let nextCover = coverImage;
       if (meta.coverFile) {
         try {
-          const coverUrl = await uploadAdminFile(meta.coverFile);
-          setCoverImage(coverUrl);
+          nextCover = await uploadAdminFile(meta.coverFile);
         } catch {
           /* обложка из тегов опциональна */
         }
       }
+
+      onChange({
+        trackType: PostTrackType.UPLOAD,
+        audioUrl: url,
+        trackTitle: meta.title ?? trackTitle,
+        trackArtist: meta.artist ?? trackArtist,
+        coverImage: nextCover,
+        embedInput: "",
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка загрузки");
     } finally {
@@ -165,7 +179,7 @@ export function PostTrackField({
               {uploading ? "Загрузка…" : "Выбрать аудио *"}
               <input
                 type="file"
-                accept="audio/mpeg,audio/mp3,audio/ogg,audio/wav,audio/webm,audio/mp4,audio/x-m4a,.mp3,.ogg,.wav,.webm,.m4a"
+                accept={AUDIO_ACCEPT}
                 className="sr-only"
                 disabled={uploading}
                 onChange={(event) => {
@@ -179,7 +193,7 @@ export function PostTrackField({
               <button
                 type="button"
                 className="text-xs text-muted underline"
-                onClick={() => setAudioUrl("")}
+                onClick={() => patch({ audioUrl: "" })}
               >
                 Удалить аудио
               </button>
@@ -197,7 +211,7 @@ export function PostTrackField({
                 name="trackTitle"
                 required
                 value={trackTitle}
-                onChange={(event) => setTrackTitle(event.target.value)}
+                onChange={(event) => patch({ trackTitle: event.target.value })}
                 className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
               />
             </div>
@@ -207,7 +221,7 @@ export function PostTrackField({
                 name="trackArtist"
                 required
                 value={trackArtist}
-                onChange={(event) => setTrackArtist(event.target.value)}
+                onChange={(event) => patch({ trackArtist: event.target.value })}
                 className="min-h-11 w-full rounded-lg border border-border bg-card px-3 text-sm"
               />
             </div>
@@ -217,15 +231,14 @@ export function PostTrackField({
             name="trackCoverImage"
             label="Обложка альбома"
             value={coverImage}
-            onChange={setCoverImage}
+            onChange={(next) => patch({ coverImage: next })}
             aspect="square"
             urlPlaceholder="https://… или /api/uploads/…"
           />
 
           <p className="text-xs text-muted">
-            После выбора аудио название и исполнитель подставляются из метаданных
-            файла (можно изменить). Обложку можно загрузить, взять из тегов MP3 или
-            указать публичную ссылку https://.
+            Поддерживаются MP3, OGG, WAV, WebM, M4A, FLAC. Название и исполнитель
+            подставляются из метаданных (можно изменить).
           </p>
         </div>
       ) : null}
@@ -239,7 +252,7 @@ export function PostTrackField({
             name="trackEmbedInput"
             rows={5}
             value={embedInput}
-            onChange={(event) => setEmbedInput(event.target.value)}
+            onChange={(event) => patch({ embedInput: event.target.value })}
             placeholder='<iframe src="https://music.yandex.ru/iframe/album/…/track/…" …></iframe>'
             className="admin-markdown-textarea w-full rounded-lg border border-border bg-card px-3 py-2 text-xs"
           />
@@ -259,7 +272,7 @@ export function PostTrackField({
             name="trackEmbedInput"
             rows={3}
             value={embedInput}
-            onChange={(event) => setEmbedInput(event.target.value)}
+            onChange={(event) => patch({ embedInput: event.target.value })}
             placeholder="https://music.youtube.com/watch?v=… или https://www.youtube.com/embed/…"
             className="admin-markdown-textarea w-full rounded-lg border border-border bg-card px-3 py-2 text-xs"
           />

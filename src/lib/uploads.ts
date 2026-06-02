@@ -3,7 +3,7 @@ import path from "node:path";
 import { randomBytes } from "node:crypto";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const MAX_AUDIO_SIZE = 15 * 1024 * 1024;
+const MAX_AUDIO_SIZE = 50 * 1024 * 1024;
 
 const IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -21,6 +21,18 @@ const AUDIO_TYPES = new Set([
   "audio/webm",
   "audio/mp4",
   "audio/x-m4a",
+  "audio/flac",
+  "audio/x-flac",
+]);
+
+const AUDIO_EXTENSIONS = new Set([
+  ".mp3",
+  ".mpeg",
+  ".ogg",
+  ".wav",
+  ".webm",
+  ".m4a",
+  ".flac",
 ]);
 
 export function getUploadDir() {
@@ -32,8 +44,14 @@ export function getPublicUploadUrl(filename: string) {
   return `${base}/api/uploads/${filename}`;
 }
 
+function isAudioFile(file: File) {
+  if (AUDIO_TYPES.has(file.type)) return true;
+  const ext = path.extname(file.name).toLowerCase();
+  return AUDIO_EXTENSIONS.has(ext);
+}
+
 export async function saveUpload(file: File) {
-  const isAudio = AUDIO_TYPES.has(file.type);
+  const isAudio = isAudioFile(file);
   const isImage = IMAGE_TYPES.has(file.type);
   if (!isAudio && !isImage) {
     throw new Error("Недопустимый тип файла");
@@ -42,7 +60,7 @@ export async function saveUpload(file: File) {
   if (file.size > maxSize) {
     throw new Error(
       isAudio
-        ? "Аудио слишком большое (макс. 15 МБ)"
+        ? "Аудио слишком большое (макс. 50 МБ)"
         : "Файл слишком большой (макс. 5 МБ)",
     );
   }
@@ -75,6 +93,8 @@ function mimeToExt(mime: string) {
     "audio/webm": ".webm",
     "audio/mp4": ".m4a",
     "audio/x-m4a": ".m4a",
+    "audio/flac": ".flac",
+    "audio/x-flac": ".flac",
   };
   return map[mime] ?? "";
 }

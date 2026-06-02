@@ -20,23 +20,20 @@ type MarkdownEditorProps = {
   draftKey: string;
   label?: string;
   required?: boolean;
-  /** Сбросить localStorage для draftKey при монтировании (страница «новый пост») */
+  /** @deprecated черновик больше не сбрасывается автоматически */
   resetDraftOnMount?: boolean;
   /** После успешного сохранения — подтянуть контент с сервера, не из черновика */
   syncFromServerOnMount?: boolean;
+  /** Расширенный макет для страницы поста в админке */
+  layout?: "default" | "wide";
 };
 
 function loadDraftValue(
   draftKey: string,
   initialValue: string,
-  options: { resetDraftOnMount?: boolean; syncFromServerOnMount?: boolean },
+  options: { syncFromServerOnMount?: boolean },
 ) {
   if (typeof window === "undefined") return initialValue;
-
-  if (options.resetDraftOnMount) {
-    clearEditorDraft(draftKey);
-    return initialValue;
-  }
 
   if (options.syncFromServerOnMount) {
     clearEditorDraft(draftKey);
@@ -52,14 +49,14 @@ export function MarkdownEditor({
   draftKey,
   label = "Содержимое (Markdown)",
   required = false,
-  resetDraftOnMount = false,
   syncFromServerOnMount = false,
+  layout = "default",
 }: MarkdownEditorProps) {
   const textareaId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(() =>
-    loadDraftValue(draftKey, initialValue, { resetDraftOnMount, syncFromServerOnMount }),
+    loadDraftValue(draftKey, initialValue, { syncFromServerOnMount }),
   );
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -268,8 +265,18 @@ export function MarkdownEditor({
         </div>
       </div>
 
-      <div className="grid min-w-0 gap-4 lg:grid-cols-2">
-        <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card">
+      <div
+        className={
+          layout === "wide"
+            ? "grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
+            : "grid min-w-0 gap-4 lg:grid-cols-2"
+        }
+      >
+        <div
+          className={`min-w-0 overflow-hidden rounded-lg border border-border bg-card ${
+            layout === "wide" ? "flex min-h-[min(70vh,720px)] flex-col" : ""
+          }`}
+        >
           <textarea
             ref={textareaRef}
             id={textareaId}
@@ -280,13 +287,21 @@ export function MarkdownEditor({
             onDrop={onDrop}
             onDragOver={(event) => event.preventDefault()}
             onPaste={onPaste}
-            rows={18}
+            rows={layout === "wide" ? 28 : 18}
             spellCheck
-            className="admin-markdown-textarea block w-full min-w-0 resize-y border-0 bg-transparent px-3 py-2 text-sm leading-relaxed outline-none"
+            className={`admin-markdown-textarea block w-full min-w-0 resize-y border-0 bg-transparent px-3 py-2 text-sm leading-relaxed outline-none ${
+              layout === "wide" ? "min-h-[min(70vh,720px)] flex-1" : ""
+            }`}
             placeholder="Пишите Markdown… Перетащите или вставьте (Ctrl+V) изображение."
           />
         </div>
-        <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card p-4">
+        <div
+          className={`min-w-0 overflow-hidden rounded-lg border border-border bg-card p-4 ${
+            layout === "wide"
+              ? "max-h-[min(70vh,720px)] overflow-y-auto xl:max-h-none"
+              : ""
+          }`}
+        >
           <p className="mb-2 text-xs font-medium text-muted">Предпросмотр</p>
           <div className="markdown-editor-preview prose prose-neutral dark:prose-invert min-w-0 max-w-none">
             <MarkdownContent content={value || "*Пусто*"} />

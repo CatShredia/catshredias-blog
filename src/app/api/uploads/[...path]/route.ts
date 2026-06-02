@@ -18,6 +18,7 @@ const MIME: Record<string, string> = {
   ".wav": "audio/wav",
   ".webm": "audio/webm",
   ".m4a": "audio/mp4",
+  ".flac": "audio/flac",
 };
 
 function parseRange(

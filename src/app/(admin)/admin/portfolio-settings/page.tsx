@@ -1,12 +1,12 @@
 import { PortfolioSettingsForm } from "@/components/admin/portfolio-settings-form";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 import { getSiteSettings } from "@/lib/queries/site-settings";
 
 export default async function PortfolioSettingsPage() {
   const settings = await getSiteSettings();
 
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <h1 className="text-2xl font-bold">Портфолио — страница /portfolio</h1>
       <p className="mt-2 text-sm text-muted">
         Ссылка на hh.ru и PDF-резюме отображаются на публичной странице портфолио.
@@ -18,6 +18,6 @@ export default async function PortfolioSettingsPage() {
           lookingForWork={settings.lookingForWork}
         />
       </div>
-    </Container>
+    </AdminContainer>
   );
 }

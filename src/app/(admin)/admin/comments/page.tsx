@@ -8,7 +8,7 @@ import {
   markSeenAction,
 } from "@/app/(admin)/admin/comments/actions";
 import { Button } from "@/components/ui/button";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 import { formatDateRu } from "@/lib/dates";
 import { blogPostPath } from "@/lib/slug";
 import { mapCommentAuthor } from "@/lib/deleted-user";
@@ -23,7 +23,7 @@ export default async function AdminCommentsPage() {
   const unseen = comments.filter((c) => !c.adminSeenAt).length;
 
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Комментарии</h1>
@@ -115,7 +115,7 @@ export default async function AdminCommentsPage() {
           );
         })}
       </ul>
-    </Container>
+    </AdminContainer>
   );
 }
 

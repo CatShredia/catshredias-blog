@@ -1,5 +1,5 @@
 import { AdminBooksTable } from "@/components/admin/admin-books-table";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 import { ButtonLink } from "@/components/ui/button";
 import { listAdminBooks } from "@/lib/queries/books";
 
@@ -7,7 +7,7 @@ export default async function AdminBooksPage() {
   const books = await listAdminBooks();
 
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Библиотека</h1>
         <ButtonLink href="/admin/books/new">Добавить книгу</ButtonLink>
@@ -24,6 +24,6 @@ export default async function AdminBooksPage() {
           reviewTitle: book.reviewPost?.title ?? null,
         }))}
       />
-    </Container>
+    </AdminContainer>
   );
 }

@@ -9,7 +9,7 @@ import {
 } from "@/app/(admin)/admin/books/actions";
 import { BookForm } from "@/components/admin/book-form";
 import { Button } from "@/components/ui/button";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 import { getAdminBook } from "@/lib/queries/books";
 import { prisma } from "@/lib/prisma";
 
@@ -34,7 +34,7 @@ export default async function EditBookPage({ params, searchParams }: PageProps) 
   const linkReview = linkReviewPostAction.bind(null, id);
 
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <Link href="/admin/books" className="text-sm text-muted hover:text-foreground">
         ← Библиотека
       </Link>
@@ -58,6 +58,6 @@ export default async function EditBookPage({ params, searchParams }: PageProps) 
           Удалить книгу
         </Button>
       </form>
-    </Container>
+    </AdminContainer>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { MarkdownContent } from "@/components/markdown/markdown-content";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 
 export const metadata: Metadata = {
   title: "Правила форматирования",
@@ -55,7 +55,7 @@ const answer = 42;
 
 export default function AdminFormattingPage() {
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <Link href="/admin/posts" className="text-sm text-muted hover:text-foreground">
         ← К постам
       </Link>
@@ -66,6 +66,6 @@ export default function AdminFormattingPage() {
       <div className="mt-8 max-w-3xl">
         <MarkdownContent content={rulesContent} />
       </div>
-    </Container>
+    </AdminContainer>
   );
 }

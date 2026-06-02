@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { auth, signOut } from "@/lib/auth";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 import { Button } from "@/components/ui/button";
 import { listAdminPosts, listAdminProjects } from "@/lib/queries/admin";
 import { countUnreadNotifications } from "@/lib/notifications";
@@ -23,7 +23,7 @@ export default async function AdminDashboardPage() {
   const recentPosts = await listAdminPosts();
 
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <h1 className="text-2xl font-bold">Панель управления</h1>
       <p className="mt-2 text-muted">
         Вы вошли как {session?.user?.email ?? "администратор"}.
@@ -107,6 +107,6 @@ export default async function AdminDashboardPage() {
           Выйти
         </Button>
       </form>
-    </Container>
+    </AdminContainer>
   );
 }

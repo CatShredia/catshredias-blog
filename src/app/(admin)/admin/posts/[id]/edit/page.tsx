@@ -7,7 +7,7 @@ import {
 } from "@/app/(admin)/admin/posts/actions";
 import { PostForm } from "@/components/admin/post-form";
 import { Button } from "@/components/ui/button";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 import { getAdminPost } from "@/lib/queries/admin";
 
 type PageProps = {
@@ -24,7 +24,7 @@ export default async function EditPostPage({ params, searchParams }: PageProps) 
   const updateAction = updatePostAction.bind(null, id);
 
   return (
-    <Container className="py-10">
+    <AdminContainer wide className="py-6">
       <Link href="/admin/posts" className="text-sm text-muted hover:text-foreground">
         ← К списку постов
       </Link>
@@ -35,7 +35,7 @@ export default async function EditPostPage({ params, searchParams }: PageProps) 
         </p>
       ) : null}
 
-      <div className="mt-8">
+      <div className="mt-6">
         <PostForm
           mode="edit"
           post={post}
@@ -49,6 +49,6 @@ export default async function EditPostPage({ params, searchParams }: PageProps) 
           Удалить пост
         </Button>
       </form>
-    </Container>
+    </AdminContainer>
   );
 }

@@ -3,7 +3,7 @@ import { ReportStatus } from "@prisma/client";
 
 import { resolveReportAction } from "@/app/(admin)/admin/comments/actions";
 import { Button } from "@/components/ui/button";
-import { Container } from "@/components/ui/container";
+import { AdminContainer } from "@/components/ui/admin-container";
 import { formatDateRu } from "@/lib/dates";
 import { blogPostPath } from "@/lib/slug";
 import { listReports } from "@/lib/queries/comments";
@@ -31,7 +31,7 @@ export default async function AdminReportsPage({
   );
 
   return (
-    <Container className="py-10">
+    <AdminContainer className="py-6">
       <Link href="/admin/comments" className="text-sm text-muted hover:text-foreground">
         ← Комментарии
       </Link>
@@ -111,6 +111,6 @@ export default async function AdminReportsPage({
           ))
         )}
       </ul>
-    </Container>
+    </AdminContainer>
   );
 }
