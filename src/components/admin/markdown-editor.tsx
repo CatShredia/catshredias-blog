@@ -9,7 +9,10 @@ import {
   readEditorDraft,
   writeEditorDraft,
 } from "@/lib/editor-draft";
-import { SPOILER_MARKDOWN_SNIPPET } from "@/lib/markdown-spoiler";
+import {
+  buildSpoilerMarkdown,
+  SPOILER_MARKDOWN_SNIPPET,
+} from "@/lib/markdown-spoiler";
 
 type MarkdownEditorProps = {
   name: string;
@@ -91,29 +94,60 @@ export function MarkdownEditor({
     setCursor(null);
   }, [value, cursor]);
 
-  const insertSnippet = useCallback((snippet: string) => {
+  const insertAtSelection = useCallback(
+    (snippet: string, replaceSelection = false) => {
+      const textarea = textareaRef.current;
+      if (!textarea) {
+        setValue(
+          (prev) =>
+            `${prev}${prev.endsWith("\n") || prev.length === 0 ? "" : "\n"}${snippet}\n`,
+        );
+        return;
+      }
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const before = value.slice(0, start);
+      const after = value.slice(end);
+      const needsLeadingNewline = before.length > 0 && !before.endsWith("\n");
+      const needsTrailingNewline = after.length > 0 && !after.startsWith("\n");
+      const insertion = `${needsLeadingNewline ? "\n" : ""}${snippet}${needsTrailingNewline ? "\n" : ""}`;
+      const next = replaceSelection
+        ? `${before}${snippet}${after}`
+        : `${before}${insertion}${after}`;
+      const nextCursor = replaceSelection
+        ? before.length + snippet.length
+        : before.length + insertion.length;
+
+      setValue(next);
+      setCursor(nextCursor);
+    },
+    [value],
+  );
+
+  const insertSnippet = useCallback(
+    (snippet: string) => insertAtSelection(snippet, false),
+    [insertAtSelection],
+  );
+
+  const insertSpoiler = useCallback(() => {
     const textarea = textareaRef.current;
     if (!textarea) {
-      setValue(
-        (prev) =>
-          `${prev}${prev.endsWith("\n") || prev.length === 0 ? "" : "\n"}${snippet}\n`,
-      );
+      insertSnippet(SPOILER_MARKDOWN_SNIPPET);
       return;
     }
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const before = value.slice(0, start);
-    const after = value.slice(end);
-    const needsLeadingNewline = before.length > 0 && !before.endsWith("\n");
-    const needsTrailingNewline = after.length > 0 && !after.startsWith("\n");
-    const insertion = `${needsLeadingNewline ? "\n" : ""}${snippet}${needsTrailingNewline ? "\n" : ""}`;
-    const next = `${before}${insertion}${after}`;
-    const nextCursor = before.length + insertion.length;
+    const selected = value.slice(start, end);
 
-    setValue(next);
-    setCursor(nextCursor);
-  }, [value]);
+    if (!selected.trim()) {
+      insertSnippet(SPOILER_MARKDOWN_SNIPPET);
+      return;
+    }
+
+    insertAtSelection(buildSpoilerMarkdown(selected), true);
+  }, [value, insertAtSelection, insertSnippet]);
 
   async function uploadFile(file: File) {
     setUploading(true);
@@ -216,7 +250,7 @@ export function MarkdownEditor({
           <button
             type="button"
             className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
-            onClick={() => insertSnippet(SPOILER_MARKDOWN_SNIPPET)}
+            onClick={insertSpoiler}
           >
             Спойлер
           </button>
@@ -254,7 +288,7 @@ export function MarkdownEditor({
         </div>
         <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card p-4">
           <p className="mb-2 text-xs font-medium text-muted">Предпросмотр</p>
-          <div className="markdown-editor-preview min-w-0">
+          <div className="markdown-editor-preview prose prose-neutral dark:prose-invert min-w-0 max-w-none">
             <MarkdownContent content={value || "*Пусто*"} />
           </div>
         </div>
@@ -281,8 +315,8 @@ export function MarkdownEditor({
         />
       ) : null}
       <p className="text-xs text-muted">
-        Изображения: кнопка, drag-and-drop или Ctrl+V. Спойлер: кнопка «Спойлер» или блок
-        :::spoiler Заголовок … :::. Автосохранение каждые 500 мс.
+        Изображения: кнопка, drag-and-drop или Ctrl+V. Спойлер: выделите текст и нажмите
+        «Спойлер», либо вставьте блок :::spoiler … :::. Автосохранение каждые 500 мс.
       </p>
     </div>
   );

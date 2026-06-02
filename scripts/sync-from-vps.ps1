@@ -3,32 +3,55 @@
 # Требуется: ssh/scp, pg_dump, psql (PostgreSQL client или Git).
 
 # --- Настройки ---
+
+# SSH: пользователь и IP VPS
 $RemoteUser = "deploy"
 $RemoteHost = "147.45.246.115"
+
+# Каталог проекта на сервере (где лежит backups/ и docker-compose)
 $RemoteProject = "/home/deploy/catshredias-blog"
+
+# Имя файла дампа в $RemoteProject/backups/ (или полный путь, начиная с /)
+# После RunRemoteBackupFirst = $true подставьте имя из вывода backup-db.sh на VPS
 $RemoteBackupFile = "portfolio_db_20260528_235409.sql.gz"
 
+# Docker: контейнер Next.js и путь к загрузкам внутри контейнера
 $RemoteWebContainer = "portfolio-web"
 $RemoteUploadsPath = "/app/uploads"
 
+# Корень репозитория на ПК
 $LocalProjectRoot = "C:\directory-git\linux\catshredias-blog"
+
+# Куда скачиваются дамп, архив uploads и отчёт sync-report_*.txt
 $LocalDownloadDir = "C:\Users\catsh\Downloads\vps-sync"
+
+# Локальные файлы сайта (обложки, аватары) — перезаписываются с VPS
 $LocalUploadsDir = "$LocalProjectRoot\uploads"
+
+# Сюда сохраняется pg_dump локальной БД до синка (страховка)
 $LocalBackupDir = "$LocalProjectRoot\backups"
 
+# Локальная PostgreSQL (docker compose up -d db, порт из docker-compose.yml)
 $LocalPgHost = "localhost"
-$LocalPgPort = 5432
+$LocalPgPort = 55433
 $LocalPgUser = "postgres"
-$LocalPgPassword = "qwerty123"
+$LocalPgPassword = "postgres"
 $LocalPgDatabase = "portfolio_db"
 
 # SSH-ключ с passphrase: один раз за сессию Windows через ssh-agent
 $UseSshAgent = $true
 $SshPrivateKeyPath = "$env:USERPROFILE\.ssh\id_ed25519_github"
 
-$RunRemoteBackupFirst = $false
+# $true — перед скачиванием выполнить на VPS scripts/backup-db.sh (затем обновите RemoteBackupFile)
+$RunRemoteBackupFirst = $true
+
+# $true — DROP/CREATE локальной БД и залить скачанный дамп; $false — только скачать файлы
 $RestoreVpsBackupToLocal = $true
+
+# Запрос yes перед сбросом локальной БД
 $ConfirmBeforeDbReset = $true
+
+# Запрос yes перед очисткой uploads и распаковкой архива с VPS
 $ConfirmBeforeUploadsReset = $true
 
 # --- Скрипт ---

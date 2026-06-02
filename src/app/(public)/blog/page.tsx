@@ -17,11 +17,16 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 export const dynamic = "force-dynamic";
 
-export default async function BlogPage() {
+type BlogPageProps = {
+  searchParams: Promise<{ category?: string; tag?: string }>;
+};
+
+export default async function BlogPage({ searchParams }: BlogPageProps) {
+  const { category: categorySlug, tag: tagSlug } = await searchParams;
   const [categories, tags, initial] = await Promise.all([
     listCategories(),
     listTags(),
-    listPublishedPosts({ limit: 6 }),
+    listPublishedPosts({ limit: 6, categorySlug, tagSlug }),
   ]);
 
   return (
@@ -42,6 +47,8 @@ export default async function BlogPage() {
             name: item.name,
             slug: item.slug,
           }))}
+          initialCategory={categorySlug}
+          initialTag={tagSlug}
           initialItems={initial.items}
           initialCursor={initial.nextCursor}
         />

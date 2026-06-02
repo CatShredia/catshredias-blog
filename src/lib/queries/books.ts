@@ -54,6 +54,7 @@ export async function getBookBySlug(slug: string) {
         slug: true,
         title: true,
         excerpt: true,
+        content: true,
         coverImage: true,
         publishedAt: true,
       },

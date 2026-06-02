@@ -4,6 +4,8 @@ import { countUnreadNotifications } from "@/lib/notifications";
 
 const links = [
   { href: "/admin/posts", label: "Посты" },
+  { href: "/admin/categories", label: "Категории" },
+  { href: "/admin/tags", label: "Теги" },
   { href: "/admin/books", label: "Библиотека" },
   { href: "/admin/projects", label: "Проекты" },
   { href: "/admin/portfolio-settings", label: "Портфолио" },

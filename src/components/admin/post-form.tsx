@@ -1,8 +1,10 @@
 "use client";
 
 import { PostStatus, PostTrackType } from "@prisma/client";
-import { useState } from "react";
+import Link from "next/link";
+import { useActionState, useState } from "react";
 
+import type { PostFormState } from "@/app/(admin)/admin/posts/actions";
 import { MarkdownEditor } from "@/components/admin/markdown-editor";
 import { PostTrackField } from "@/components/admin/post-track-field";
 import { Button } from "@/components/ui/button";
@@ -17,7 +19,10 @@ function preventEnterSubmit(event: React.KeyboardEvent<HTMLInputElement>) {
 
 type PostFormProps = {
   mode: "create" | "edit";
-  saveAction: (formData: FormData) => Promise<void>;
+  saveAction: (
+    prev: PostFormState,
+    formData: FormData,
+  ) => Promise<PostFormState>;
   /** После ?saved=1 — не подставлять старый localStorage-черновик */
   syncContentFromServer?: boolean;
   post?: {
@@ -40,12 +45,15 @@ type PostFormProps = {
   };
 };
 
+const initialState: PostFormState = {};
+
 export function PostForm({
   mode,
   post,
   saveAction,
   syncContentFromServer = false,
 }: PostFormProps) {
+  const [state, action, pending] = useActionState(saveAction, initialState);
   const [title, setTitle] = useState(post?.title ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(mode === "edit");
@@ -58,7 +66,7 @@ export function PostForm({
     : "";
 
   return (
-    <form action={saveAction} className="space-y-6">
+    <form action={action} className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">Заголовок</label>
@@ -157,6 +165,11 @@ export function PostForm({
             defaultValue={post?.categories.map((c) => c.name).join(", ") ?? ""}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
           />
+          <p className="mt-1 text-xs text-muted">
+            <Link href="/admin/categories" className="text-accent hover:underline">
+              Управление категориями
+            </Link>
+          </p>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium">
@@ -167,20 +180,42 @@ export function PostForm({
             defaultValue={post?.tags.map((t) => t.name).join(", ") ?? ""}
             className="min-h-11 w-full rounded-lg border border-border bg-card px-3"
           />
+          <p className="mt-1 text-xs text-muted">
+            <Link href="/admin/tags" className="text-accent hover:underline">
+              Управление тегами
+            </Link>
+          </p>
         </div>
       </div>
 
-      <MarkdownEditor
-        key={draftKey}
-        name="content"
-        initialValue={post?.content ?? ""}
-        draftKey={draftKey}
-        resetDraftOnMount={mode === "create"}
-        syncFromServerOnMount={syncContentFromServer}
-      />
+      <div>
+        <MarkdownEditor
+          key={draftKey}
+          name="content"
+          initialValue={post?.content ?? ""}
+          draftKey={draftKey}
+          resetDraftOnMount={mode === "create"}
+          syncFromServerOnMount={syncContentFromServer}
+        />
+        {state.fieldErrors?.content ? (
+          <p className="mt-2 text-sm text-red-600">
+            {state.fieldErrors.content[0]}
+          </p>
+        ) : null}
+      </div>
 
-      <Button type="submit">
-        {mode === "create" ? "Создать пост" : "Сохранить"}
+      {state.error ? (
+        <p className="text-sm text-red-600" role="alert">
+          {state.error}
+        </p>
+      ) : null}
+
+      <Button type="submit" disabled={pending}>
+        {pending
+          ? "Сохранение…"
+          : mode === "create"
+            ? "Создать пост"
+            : "Сохранить"}
       </Button>
     </form>
   );

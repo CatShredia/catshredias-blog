@@ -74,6 +74,20 @@ export async function upsertCategories(names: string[]) {
   return ids;
 }
 
+export async function listAdminCategories() {
+  return prisma.category.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { posts: true } } },
+  });
+}
+
+export async function listAdminTags() {
+  return prisma.tag.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { posts: true } } },
+  });
+}
+
 export async function upsertTags(names: string[]) {
   const ids: string[] = [];
   for (const name of names) {

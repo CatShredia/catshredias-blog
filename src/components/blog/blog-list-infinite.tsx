@@ -22,22 +22,26 @@ export function BlogListInfinite({
   tags,
   initialItems,
   initialCursor,
+  initialCategory,
+  initialTag,
 }: {
   categories: FilterOption[];
   tags: FilterOption[];
   initialItems: PostListItem[];
   initialCursor: string | null;
+  initialCategory?: string;
+  initialTag?: string;
 }) {
   const [items, setItems] = useState(initialItems);
   const [cursor, setCursor] = useState<string | null>(initialCursor);
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("");
-  const [tag, setTag] = useState("");
+  const [category, setCategory] = useState(initialCategory ?? "");
+  const [tag, setTag] = useState(initialTag ?? "");
   const [sort, setSort] = useState<SortOption>("newest");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const skipSearchEffect = useRef(true);
+  const skipSearchEffect = useRef(!(initialCategory || initialTag));
 
   const fetchPosts = useCallback(
     async (opts: {

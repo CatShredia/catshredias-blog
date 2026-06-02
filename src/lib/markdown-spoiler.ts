@@ -8,6 +8,11 @@ export const SPOILER_MARKDOWN_SNIPPET = `:::spoiler Заголовок спой�
 Скрытый текст в **Markdown**.
 :::`;
 
+export function buildSpoilerMarkdown(body: string, title = "Спойлер") {
+  const trimmed = body.trim();
+  return `:::spoiler ${title}\n${trimmed}\n:::`;
+}
+
 export function splitMarkdownSpoilers(source: string): MarkdownSegment[] {
   const segments: MarkdownSegment[] = [];
   let lastIndex = 0;

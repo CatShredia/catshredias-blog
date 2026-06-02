@@ -6,7 +6,6 @@ import { notFound } from "next/navigation";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { StarRatingDisplay } from "@/components/ui/star-rating";
 import { Badge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { getBookBySlug } from "@/lib/queries/books";
@@ -92,12 +91,24 @@ export default async function BookPage({ params }: PageProps) {
 
       {book.reviewPost ? (
         <Section title="Отзыв в блоге" className="mt-10">
-          <ButtonLink href={blogPostPath(book.reviewPost.slug)}>
-            {book.reviewPost.title}
-          </ButtonLink>
-          {book.reviewPost.excerpt ? (
-            <p className="mt-3 text-muted">{book.reviewPost.excerpt}</p>
-          ) : null}
+          <p className="text-sm text-muted">
+            <Link
+              href={blogPostPath(book.reviewPost.slug)}
+              className="font-medium text-accent underline-offset-4 hover:underline"
+            >
+              {book.reviewPost.title}
+            </Link>
+            {book.reviewPost.publishedAt ? (
+              <>
+                {" "}
+                ·{" "}
+                {new Date(book.reviewPost.publishedAt).toLocaleDateString("ru-RU")}
+              </>
+            ) : null}
+          </p>
+          <article className="mt-6 max-w-3xl">
+            <MarkdownContent content={book.reviewPost.content} />
+          </article>
         </Section>
       ) : null}
     </Container>
