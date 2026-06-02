@@ -130,7 +130,7 @@ docker compose up -d --build
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD`                          | для seed    | Учётка администратора                                                     |
 | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET`                   | нет         | OAuth GitHub                                                              |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`                   | нет         | OAuth Google                                                              |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | нет         | Turnstile для комментариев                                                |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | нет         | Turnstile для комментариев; **оба** ключа обязательны для включения, иначе капча отключена |
 | `CRON_SECRET`                                             | нет         | Защита cron (`publish-scheduled`, `notify-digest`)                        |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`                 | нет         | Уведомления админу в Telegram (`/admin/notifications`)                    |
 | `NPM_REGISTRY`                                            | нет         | npm registry для `docker compose build` на VPS (например GitVerse mirror) |
