@@ -13,6 +13,7 @@ import {
   type MarkdownCodemirrorHandle,
 } from "@/components/admin/markdown-codemirror";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
+import { MarkdownFloatingToc } from "@/components/markdown/markdown-floating-toc";
 import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
 import {
   clearEditorDraft,
@@ -334,13 +335,30 @@ export function MarkdownEditor({
     />
   );
 
-  const previewPane = (
+  const previewBody = (
     <>
       <p className="mb-2 shrink-0 text-xs font-medium text-muted">Предпросмотр</p>
       <div className="markdown-editor-preview prose prose-neutral dark:prose-invert min-w-0 max-w-none">
         <MarkdownContent content={value || "*Пусто*"} linkTargets={linkTargets} />
       </div>
     </>
+  );
+
+  const previewShell = (scrollClassName: string) => (
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card">
+        <MarkdownFloatingToc
+          content={value}
+          scrollContainerRef={previewScrollRef}
+          storageKey={`admin-markdown-toc-${layout}`}
+        />
+      <div
+        ref={previewScrollRef}
+        onScroll={handlePreviewScroll}
+        className={scrollClassName}
+      >
+        {previewBody}
+      </div>
+    </div>
   );
 
   return (
@@ -467,13 +485,7 @@ export function MarkdownEditor({
             title="Перетащите, чтобы изменить ширину колонок"
           />
           <Panel id="preview" minSize={25} className="min-w-0">
-            <div
-              ref={previewScrollRef}
-              onScroll={handlePreviewScroll}
-              className="flex h-full min-h-0 flex-col overflow-y-auto rounded-lg border border-border bg-card p-4"
-            >
-              {previewPane}
-            </div>
+            {previewShell("flex min-h-0 flex-1 flex-col overflow-y-auto p-4")}
           </Panel>
         </Group>
       ) : (
@@ -485,17 +497,11 @@ export function MarkdownEditor({
           ) : null}
 
           {showPreview ? (
-            <div
-              ref={previewScrollRef}
-              onScroll={handlePreviewScroll}
-              className={`min-w-0 overflow-hidden rounded-lg border border-border bg-card p-4 ${
-                mode === "preview"
-                  ? "min-h-[min(70vh,720px)] overflow-y-auto"
-                  : "max-h-[480px] overflow-y-auto"
-              }`}
-            >
-              {previewPane}
-            </div>
+            previewShell(
+              mode === "preview"
+                ? "min-h-[min(70vh,720px)] flex-1 overflow-y-auto p-4"
+                : "max-h-[480px] overflow-y-auto p-4",
+            )
           ) : null}
         </div>
       )}
