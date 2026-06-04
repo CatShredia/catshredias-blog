@@ -203,6 +203,56 @@ body {
   min-width: 0;
 }
 
+.admin-markdown-codemirror--fill {
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+.admin-markdown-codemirror--fill .cm-editor,
+.admin-markdown-codemirror--fill .cm-scroller {
+  height: 100%;
+  max-height: 100%;
+}
+
+.markdown-editor-split-group {
+  display: flex;
+  gap: 0;
+}
+
+.markdown-editor-split-handle {
+  flex: 0 0 10px;
+  margin: 0 2px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--border) 70%, transparent);
+  cursor: col-resize;
+  touch-action: none;
+  transition: background-color 0.15s ease;
+}
+
+.markdown-editor-split-handle:hover,
+.markdown-editor-split-handle:active {
+  background: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.markdown-editor-split-handle::after {
+  content: "";
+  display: block;
+  width: 2px;
+  height: 2rem;
+  margin: auto;
+  margin-top: calc(50% - 1rem);
+  border-radius: 1px;
+  background: var(--muted);
+  opacity: 0.6;
+}
+
+.markdown-editor-split-handle:hover::after,
+.markdown-editor-split-handle:active::after {
+  opacity: 1;
+  background: var(--accent);
+}
+
 .admin-markdown-codemirror .cm-editor {
   min-height: inherit;
 }

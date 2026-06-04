@@ -1,6 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  Group,
+  Panel,
+  Separator,
+  useDefaultLayout,
+} from "react-resizable-panels";
 
 import {
   MarkdownCodemirror,
@@ -14,6 +20,7 @@ import {
   writeEditorDraft,
 } from "@/lib/editor-draft";
 import { CALLOUT_MARKDOWN_SNIPPET } from "@/lib/markdown-callout";
+import { TABLE_MARKDOWN_SNIPPET } from "@/lib/markdown-table";
 import {
   buildSpoilerMarkdown,
   SPOILER_MARKDOWN_SNIPPET,
@@ -88,6 +95,9 @@ export function MarkdownEditor({
   const [fetchedLinkTargets, setFetchedLinkTargets] = useState<WikiLinkTarget[]>(
     [],
   );
+  const [splitDirection, setSplitDirection] = useState<"horizontal" | "vertical">(
+    "horizontal",
+  );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevDraftKeyRef = useRef(draftKey);
   const linkTargets = linkTargetsProp ?? fetchedLinkTargets;
@@ -110,6 +120,16 @@ export function MarkdownEditor({
       cancelled = true;
     };
   }, [linkTargetsProp]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const update = () => {
+      setSplitDirection(media.matches ? "vertical" : "horizontal");
+    };
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     if (prevDraftKeyRef.current === draftKey) return;
@@ -149,6 +169,10 @@ export function MarkdownEditor({
 
   const insertCallout = useCallback(() => {
     editorRef.current?.insertAtSelection(CALLOUT_MARKDOWN_SNIPPET, false);
+  }, []);
+
+  const insertTable = useCallback(() => {
+    editorRef.current?.insertAtSelection(TABLE_MARKDOWN_SNIPPET, false);
   }, []);
 
   const syncPreviewScroll = useCallback((source: "editor" | "preview") => {
@@ -267,6 +291,58 @@ export function MarkdownEditor({
   const showEditor = mode === "source" || mode === "split";
   const showPreview = mode === "preview" || mode === "split";
 
+  const splitGroupHeightClass =
+    splitDirection === "vertical"
+      ? "min-h-[min(80vh,720px)]"
+      : layout === "wide"
+        ? "h-[min(70vh,720px)]"
+        : "h-[min(60vh,520px)] min-h-[420px]";
+
+  const splitLayoutId = `markdown-editor-split-${layout}-${splitDirection}`;
+  const { defaultLayout, onLayoutChanged: persistSplitLayout } = useDefaultLayout({
+    id: splitLayoutId,
+    panelIds: ["editor", "preview"],
+  });
+
+  const handleSplitLayoutChanged = useCallback(
+    (layout: Record<string, number>) => {
+      persistSplitLayout(layout);
+      editorRef.current?.refreshLayout();
+    },
+    [persistSplitLayout],
+  );
+
+  const handleSplitLayout = useCallback(() => {
+    editorRef.current?.refreshLayout();
+  }, []);
+
+  const editorPane = (
+    <MarkdownCodemirror
+      ref={editorRef}
+      id={editorId}
+      value={value}
+      onChange={setValue}
+      minHeight={editorMinHeight}
+      fillHeight={mode === "split"}
+      wikiLinkTargets={linkTargets}
+      placeholder="Пишите Markdown… Перетащите или вставьте (Ctrl+V) изображение. Wikilinks: [[Заголовок поста]]"
+      onDrop={onDrop}
+      onDragOver={onDragOver}
+      onPaste={onPaste}
+      scrollContainerRef={handleEditorScrollContainer}
+      onScroll={handleEditorScroll}
+    />
+  );
+
+  const previewPane = (
+    <>
+      <p className="mb-2 shrink-0 text-xs font-medium text-muted">Предпросмотр</p>
+      <div className="markdown-editor-preview prose prose-neutral dark:prose-invert min-w-0 max-w-none">
+        <MarkdownContent content={value || "*Пусто*"} linkTargets={linkTargets} />
+      </div>
+    </>
+  );
+
   return (
     <div className="space-y-3">
       <input type="hidden" name={name} value={value} required={required} />
@@ -335,6 +411,13 @@ export function MarkdownEditor({
           <button
             type="button"
             className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
+            onClick={insertTable}
+          >
+            Таблица
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
             onClick={insertCallout}
           >
             Callout
@@ -360,62 +443,62 @@ export function MarkdownEditor({
         </div>
       </div>
 
-      <div
-        className={
-          mode === "split"
-            ? layout === "wide"
-              ? "grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
-              : "grid min-w-0 gap-4 lg:grid-cols-2"
-            : "grid min-w-0 gap-4"
-        }
-      >
-        {showEditor ? (
-          <div
-            className={`min-w-0 overflow-hidden rounded-lg border border-border bg-card ${
-              layout === "wide" && mode === "split"
-                ? "flex min-h-[min(70vh,720px)] flex-col"
-                : ""
-            }`}
+      {mode === "split" ? (
+        <Group
+          orientation={splitDirection}
+          id={splitLayoutId}
+          defaultLayout={defaultLayout}
+          onLayoutChange={handleSplitLayout}
+          onLayoutChanged={handleSplitLayoutChanged}
+          className={`markdown-editor-split-group min-w-0 ${splitGroupHeightClass}`}
+        >
+          <Panel
+            id="editor"
+            minSize={25}
+            defaultSize={layout === "wide" ? 55 : 50}
+            className="min-w-0"
           >
-            <MarkdownCodemirror
-              ref={editorRef}
-              id={editorId}
-              value={value}
-              onChange={setValue}
-              minHeight={editorMinHeight}
-              wikiLinkTargets={linkTargets}
-              placeholder="Пишите Markdown… Перетащите или вставьте (Ctrl+V) изображение. Wikilinks: [[Заголовок поста]]"
-              onDrop={onDrop}
-              onDragOver={onDragOver}
-              onPaste={onPaste}
-              scrollContainerRef={handleEditorScrollContainer}
-              onScroll={handleEditorScroll}
-            />
-          </div>
-        ) : null}
+            <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card">
+              {editorPane}
+            </div>
+          </Panel>
+          <Separator
+            className="markdown-editor-split-handle"
+            title="Перетащите, чтобы изменить ширину колонок"
+          />
+          <Panel id="preview" minSize={25} className="min-w-0">
+            <div
+              ref={previewScrollRef}
+              onScroll={handlePreviewScroll}
+              className="flex h-full min-h-0 flex-col overflow-y-auto rounded-lg border border-border bg-card p-4"
+            >
+              {previewPane}
+            </div>
+          </Panel>
+        </Group>
+      ) : (
+        <div className="grid min-w-0 gap-4">
+          {showEditor ? (
+            <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card">
+              {editorPane}
+            </div>
+          ) : null}
 
-        {showPreview ? (
-          <div
-            ref={previewScrollRef}
-            onScroll={handlePreviewScroll}
-            className={`min-w-0 overflow-hidden rounded-lg border border-border bg-card p-4 ${
-              layout === "wide" && mode === "split"
-                ? "max-h-[min(70vh,720px)] overflow-y-auto xl:max-h-none"
-                : mode === "preview"
+          {showPreview ? (
+            <div
+              ref={previewScrollRef}
+              onScroll={handlePreviewScroll}
+              className={`min-w-0 overflow-hidden rounded-lg border border-border bg-card p-4 ${
+                mode === "preview"
                   ? "min-h-[min(70vh,720px)] overflow-y-auto"
                   : "max-h-[480px] overflow-y-auto"
-            }`}
-          >
-            <p className="mb-2 text-xs font-medium text-muted">Предпросмотр</p>
-            <div className="markdown-editor-preview prose prose-neutral dark:prose-invert min-w-0 max-w-none">
-              <MarkdownContent
-                content={value || "*Пусто*"}
-                linkTargets={linkTargets}
-              />
+              }`}
+            >
+              {previewPane}
             </div>
-          </div>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
+      )}
 
       {message ? <p className="text-xs text-muted">{message}</p> : null}
       {cropSrc ? (
@@ -438,7 +521,8 @@ export function MarkdownEditor({
         />
       ) : null}
       <p className="text-xs text-muted">
-        CodeMirror: подсветка, сворачивание заголовков и блоков кода. Wikilinks{" "}
+        CodeMirror: подсветка, сворачивание заголовков и блоков кода. В режиме Split
+        перетащите границу между колонками. Wikilinks{" "}
         <code className="text-[0.7rem]">[[пост|alias]]</code>, callouts{" "}
         <code className="text-[0.7rem]">{`> [!note]`}</code>, теги{" "}
         <code className="text-[0.7rem]">#tag</code>, спойлеры{" "}

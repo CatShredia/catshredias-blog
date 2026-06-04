@@ -28,6 +28,7 @@ export type MarkdownCodemirrorHandle = {
   insertAtSelection: (snippet: string, replaceSelection?: boolean) => void;
   getSelection: () => { from: number; to: number; text: string };
   focus: () => void;
+  refreshLayout: () => void;
 };
 
 type MarkdownCodemirrorProps = {
@@ -36,6 +37,8 @@ type MarkdownCodemirrorProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   minHeight?: string;
+  /** Заполнить высоту родителя (режим Split с resizable panels) */
+  fillHeight?: boolean;
   className?: string;
   wikiLinkTargets?: WikiLinkTarget[];
   onScroll?: (event: Event) => void;
@@ -147,6 +150,7 @@ export const MarkdownCodemirror = forwardRef<
     onChange,
     placeholder,
     minHeight = "320px",
+    fillHeight = false,
     className,
     wikiLinkTargets = [],
     onScroll,
@@ -248,16 +252,21 @@ export const MarkdownCodemirror = forwardRef<
       focus() {
         viewRef.current?.focus();
       },
+      refreshLayout() {
+        viewRef.current?.requestMeasure();
+      },
     }),
     [],
   );
+
+  const editorHeight = fillHeight ? "100%" : minHeight;
 
   return (
     <CodeMirror
       id={id}
       value={value}
-      height={minHeight}
-      className={`admin-markdown-codemirror ${className ?? ""}`.trim()}
+      height={editorHeight}
+      className={`admin-markdown-codemirror ${fillHeight ? "admin-markdown-codemirror--fill" : ""} ${className ?? ""}`.trim()}
       theme={resolvedTheme}
       extensions={extensions}
       onChange={onChange}
