@@ -148,6 +148,10 @@ function mergeDraftUpdate(
   };
 }
 
+function draftSnapshotSignature(draft: PostFormDraft) {
+  return JSON.stringify(draft);
+}
+
 /** Черновик формы поста с гидрацией из localStorage без setState в useEffect. */
 export function usePostFormDraft(
   storageKey: string,
@@ -156,16 +160,30 @@ export function usePostFormDraft(
 ) {
   const syncFromServer = options?.syncFromServer ?? false;
   const didSyncClearRef = useRef(false);
+  const cachedDraftRef = useRef(serverFallback);
+  const cachedSignatureRef = useRef(draftSnapshotSignature(serverFallback));
 
   const getSnapshot = useCallback(() => {
+    let next: PostFormDraft;
+
     if (syncFromServer && typeof window !== "undefined") {
       if (!didSyncClearRef.current) {
         didSyncClearRef.current = true;
         clearPostFormDraft(storageKey);
       }
-      return serverFallback;
+      next = serverFallback;
+    } else {
+      next = readPostFormDraft(storageKey, serverFallback);
     }
-    return readPostFormDraft(storageKey, serverFallback);
+
+    const signature = draftSnapshotSignature(next);
+    if (signature === cachedSignatureRef.current) {
+      return cachedDraftRef.current;
+    }
+
+    cachedSignatureRef.current = signature;
+    cachedDraftRef.current = next;
+    return next;
   }, [storageKey, serverFallback, syncFromServer]);
 
   const draft = useSyncExternalStore(

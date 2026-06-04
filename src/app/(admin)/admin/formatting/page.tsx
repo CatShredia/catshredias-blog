@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { AdminContainer } from "@/components/ui/admin-container";
+import { listPublishedWikiLinkTargets } from "@/lib/queries/wiki-link-targets";
 
 export const metadata: Metadata = {
   title: "Правила форматирования",
@@ -44,7 +45,32 @@ const answer = 42;
 
 ![alt](https://placehold.co/600x300)
 
-## Спойлер
+## Wikilinks (Obsidian)
+
+Ссылка на другой пост блога по заголовку или slug:
+
+[[Hello World]]
+
+С псевдонимом:
+
+[[Hello World|краткий текст]]
+
+## Callouts (GFM alerts)
+
+> [!note] Подсказка
+> Текст блока с **Markdown**.
+
+> [!tip] Совет
+> Полезная рекомендация.
+
+> [!warning] Внимание
+> Важное предупреждение.
+
+## Теги в тексте
+
+Теги в теле поста ведут на фильтр блога: #фантастика #devops
+
+## Спойлер (legacy)
 
 Текст скрыт до нажатия на заголовок:
 
@@ -53,7 +79,9 @@ const answer = 42;
 :::
 `;
 
-export default function AdminFormattingPage() {
+export default async function AdminFormattingPage() {
+  const linkTargets = await listPublishedWikiLinkTargets();
+
   return (
     <AdminContainer className="py-6">
       <Link href="/admin/posts" className="text-sm text-muted hover:text-foreground">
@@ -61,10 +89,11 @@ export default function AdminFormattingPage() {
       </Link>
       <h1 className="mt-4 text-2xl font-bold">Правила форматирования Markdown</h1>
       <p className="mt-2 max-w-2xl text-muted">
-        Справка для авторов в админке при создании постов и проектов.
+        Справка для авторов в админке: CodeMirror-редактор, wikilinks, callouts, теги и
+        спойлеры. Предпросмотр использует тот же конвейер, что и публичный сайт.
       </p>
       <div className="mt-8 max-w-3xl">
-        <MarkdownContent content={rulesContent} />
+        <MarkdownContent content={rulesContent} linkTargets={linkTargets} />
       </div>
     </AdminContainer>
   );

@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
+import {
+  MarkdownCodemirror,
+  type MarkdownCodemirrorHandle,
+} from "@/components/admin/markdown-codemirror";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
 import {
@@ -9,10 +13,14 @@ import {
   readEditorDraft,
   writeEditorDraft,
 } from "@/lib/editor-draft";
+import { CALLOUT_MARKDOWN_SNIPPET } from "@/lib/markdown-callout";
 import {
   buildSpoilerMarkdown,
   SPOILER_MARKDOWN_SNIPPET,
 } from "@/lib/markdown-spoiler";
+import type { WikiLinkTarget } from "@/lib/markdown-wikilink";
+
+type EditorMode = "source" | "split" | "preview";
 
 type MarkdownEditorProps = {
   name: string;
@@ -26,6 +34,8 @@ type MarkdownEditorProps = {
   syncFromServerOnMount?: boolean;
   /** Расширенный макет для страницы поста в админке */
   layout?: "default" | "wide";
+  /** Цели для wikilink в preview (если не задано — загрузка из API админки) */
+  linkTargets?: WikiLinkTarget[];
 };
 
 function loadDraftValue(
@@ -43,6 +53,14 @@ function loadDraftValue(
   return readEditorDraft(draftKey, initialValue);
 }
 
+function modeButtonClass(active: boolean) {
+  return `rounded-lg border px-2.5 py-1 text-xs ${
+    active
+      ? "border-accent bg-accent/10 text-foreground"
+      : "border-border hover:bg-card"
+  }`;
+}
+
 export function MarkdownEditor({
   name,
   initialValue = "",
@@ -51,20 +69,47 @@ export function MarkdownEditor({
   required = false,
   syncFromServerOnMount = false,
   layout = "default",
+  linkTargets: linkTargetsProp,
 }: MarkdownEditorProps) {
-  const textareaId = useId();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorId = useId();
+  const editorRef = useRef<MarkdownCodemirrorHandle>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const editorScrollRef = useRef<HTMLElement | null>(null);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
+  const syncingScrollRef = useRef(false);
   const [value, setValue] = useState(() =>
     loadDraftValue(draftKey, initialValue, { syncFromServerOnMount }),
   );
+  const [mode, setMode] = useState<EditorMode>("split");
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [pendingName, setPendingName] = useState<string | null>(null);
-  const [cursor, setCursor] = useState<number | null>(null);
+  const [fetchedLinkTargets, setFetchedLinkTargets] = useState<WikiLinkTarget[]>(
+    [],
+  );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevDraftKeyRef = useRef(draftKey);
+  const linkTargets = linkTargetsProp ?? fetchedLinkTargets;
+
+  const editorMinHeight =
+    layout === "wide" ? "min(70vh, 720px)" : "420px";
+
+  useEffect(() => {
+    if (linkTargetsProp) return;
+
+    let cancelled = false;
+    void fetch("/api/admin/link-targets")
+      .then((response) => (response.ok ? response.json() : []))
+      .then((data: WikiLinkTarget[]) => {
+        if (!cancelled && Array.isArray(data)) setFetchedLinkTargets(data);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [linkTargetsProp]);
 
   useEffect(() => {
     if (prevDraftKeyRef.current === draftKey) return;
@@ -82,71 +127,55 @@ export function MarkdownEditor({
     };
   }, [value, draftKey]);
 
-  useEffect(() => {
-    if (cursor == null) return;
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    textarea.focus();
-    textarea.setSelectionRange(cursor, cursor);
-    setCursor(null);
-  }, [value, cursor]);
-
-  const insertAtSelection = useCallback(
-    (snippet: string, replaceSelection = false) => {
-      const textarea = textareaRef.current;
-      if (!textarea) {
-        setValue(
-          (prev) =>
-            `${prev}${prev.endsWith("\n") || prev.length === 0 ? "" : "\n"}${snippet}\n`,
-        );
-        return;
-      }
-
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const before = value.slice(0, start);
-      const after = value.slice(end);
-      const needsLeadingNewline = before.length > 0 && !before.endsWith("\n");
-      const needsTrailingNewline = after.length > 0 && !after.startsWith("\n");
-      const insertion = `${needsLeadingNewline ? "\n" : ""}${snippet}${needsTrailingNewline ? "\n" : ""}`;
-      const next = replaceSelection
-        ? `${before}${snippet}${after}`
-        : `${before}${insertion}${after}`;
-      const nextCursor = replaceSelection
-        ? before.length + snippet.length
-        : before.length + insertion.length;
-
-      setValue(next);
-      setCursor(nextCursor);
-    },
-    [value],
-  );
-
-  const insertSnippet = useCallback(
-    (snippet: string) => insertAtSelection(snippet, false),
-    [insertAtSelection],
-  );
+  const insertSnippet = useCallback((snippet: string) => {
+    editorRef.current?.insertAtSelection(snippet, false);
+  }, []);
 
   const insertSpoiler = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
+    const handle = editorRef.current;
+    if (!handle) {
       insertSnippet(SPOILER_MARKDOWN_SNIPPET);
       return;
     }
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = value.slice(start, end);
-
-    if (!selected.trim()) {
-      insertSnippet(SPOILER_MARKDOWN_SNIPPET);
+    const { text } = handle.getSelection();
+    if (!text.trim()) {
+      handle.insertAtSelection(SPOILER_MARKDOWN_SNIPPET, false);
       return;
     }
 
-    insertAtSelection(buildSpoilerMarkdown(selected), true);
-  }, [value, insertAtSelection, insertSnippet]);
+    handle.insertAtSelection(buildSpoilerMarkdown(text), true);
+  }, [insertSnippet]);
 
-  async function uploadFile(file: File) {
+  const insertCallout = useCallback(() => {
+    editorRef.current?.insertAtSelection(CALLOUT_MARKDOWN_SNIPPET, false);
+  }, []);
+
+  const syncPreviewScroll = useCallback((source: "editor" | "preview") => {
+    if (mode !== "split") return;
+
+    const editorEl = editorScrollRef.current;
+    const previewEl = previewScrollRef.current;
+    if (!editorEl || !previewEl || syncingScrollRef.current) return;
+
+    syncingScrollRef.current = true;
+    const sourceEl = source === "editor" ? editorEl : previewEl;
+    const targetEl = source === "editor" ? previewEl : editorEl;
+    const maxSource = sourceEl.scrollHeight - sourceEl.clientHeight;
+    const ratio = maxSource > 0 ? sourceEl.scrollTop / maxSource : 0;
+    const maxTarget = targetEl.scrollHeight - targetEl.clientHeight;
+    const nextScrollTop = ratio * maxTarget;
+
+    if (Math.abs(targetEl.scrollTop - nextScrollTop) > 1) {
+      targetEl.scrollTop = nextScrollTop;
+    }
+
+    requestAnimationFrame(() => {
+      syncingScrollRef.current = false;
+    });
+  }, [mode]);
+
+  const uploadFile = useCallback(async (file: File) => {
     setUploading(true);
     setMessage(null);
     const formData = new FormData();
@@ -167,50 +196,109 @@ export function MarkdownEditor({
 
     const data = (await response.json()) as { url: string };
     if (file.type === "application/pdf") {
-      insertSnippet(`[PDF](${data.url})`);
+      editorRef.current?.insertAtSelection(`[PDF](${data.url})`, false);
     } else {
       const alt = file.name.replace(/\.[^.]+$/, "") || "image";
-      insertSnippet(`![${alt}](${data.url})`);
+      editorRef.current?.insertAtSelection(`![${alt}](${data.url})`, false);
     }
     setMessage("Файл вставлен в текст");
-  }
+  }, []);
 
-  function onDrop(event: React.DragEvent) {
-    event.preventDefault();
-    const file = event.dataTransfer.files[0];
-    if (file) void handleFile(file);
-  }
+  const handleFile = useCallback(
+    (file: File) => {
+      if (file.type.startsWith("image/")) {
+        setPendingName(file.name);
+        setCropSrc(URL.createObjectURL(file));
+        return;
+      }
+      void uploadFile(file);
+    },
+    [uploadFile],
+  );
 
-  function handleFile(file: File) {
-    if (file.type.startsWith("image/")) {
-      setPendingName(file.name);
-      setCropSrc(URL.createObjectURL(file));
-      return;
-    }
-    void uploadFile(file);
-  }
-
-  function onPaste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
-    const items = event.clipboardData?.items;
-    if (!items) return;
-
-    for (const item of items) {
-      if (!item.type.startsWith("image/")) continue;
-      const file = item.getAsFile();
-      if (!file) continue;
+  const onDrop = useCallback(
+    (event: DragEvent) => {
       event.preventDefault();
-      handleFile(file);
-      return;
-    }
-  }
+      const file = event.dataTransfer?.files[0];
+      if (file) handleFile(file);
+      return true;
+    },
+    [handleFile],
+  );
+
+  const onDragOver = useCallback((event: DragEvent) => {
+    event.preventDefault();
+    return true;
+  }, []);
+
+  const onPaste = useCallback(
+    (event: ClipboardEvent) => {
+      const items = event.clipboardData?.items;
+      if (!items) return false;
+
+      for (const item of items) {
+        if (!item.type.startsWith("image/")) continue;
+        const file = item.getAsFile();
+        if (!file) continue;
+        event.preventDefault();
+        handleFile(file);
+        return true;
+      }
+      return false;
+    },
+    [handleFile],
+  );
+
+  const handleEditorScrollContainer = useCallback(
+    (element: HTMLElement | null) => {
+      editorScrollRef.current = element;
+    },
+    [],
+  );
+
+  const handleEditorScroll = useCallback(() => {
+    syncPreviewScroll("editor");
+  }, [syncPreviewScroll]);
+
+  const handlePreviewScroll = useCallback(() => {
+    syncPreviewScroll("preview");
+  }, [syncPreviewScroll]);
+
+  const showEditor = mode === "source" || mode === "split";
+  const showPreview = mode === "preview" || mode === "split";
 
   return (
     <div className="space-y-3">
+      <input type="hidden" name={name} value={value} required={required} />
+
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label htmlFor={textareaId} className="text-sm font-medium">
+        <label htmlFor={editorId} className="text-sm font-medium">
           {label}
         </label>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
+            <button
+              type="button"
+              className={modeButtonClass(mode === "source")}
+              onClick={() => setMode("source")}
+            >
+              Source
+            </button>
+            <button
+              type="button"
+              className={modeButtonClass(mode === "split")}
+              onClick={() => setMode("split")}
+            >
+              Split
+            </button>
+            <button
+              type="button"
+              className={modeButtonClass(mode === "preview")}
+              onClick={() => setMode("preview")}
+            >
+              Preview
+            </button>
+          </div>
           <button
             type="button"
             className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card disabled:opacity-50"
@@ -247,6 +335,13 @@ export function MarkdownEditor({
           <button
             type="button"
             className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
+            onClick={insertCallout}
+          >
+            Callout
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
             onClick={insertSpoiler}
           >
             Спойлер
@@ -267,46 +362,59 @@ export function MarkdownEditor({
 
       <div
         className={
-          layout === "wide"
-            ? "grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
-            : "grid min-w-0 gap-4 lg:grid-cols-2"
+          mode === "split"
+            ? layout === "wide"
+              ? "grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
+              : "grid min-w-0 gap-4 lg:grid-cols-2"
+            : "grid min-w-0 gap-4"
         }
       >
-        <div
-          className={`min-w-0 overflow-hidden rounded-lg border border-border bg-card ${
-            layout === "wide" ? "flex min-h-[min(70vh,720px)] flex-col" : ""
-          }`}
-        >
-          <textarea
-            ref={textareaRef}
-            id={textareaId}
-            name={name}
-            required={required}
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            onDrop={onDrop}
-            onDragOver={(event) => event.preventDefault()}
-            onPaste={onPaste}
-            rows={layout === "wide" ? 28 : 18}
-            spellCheck
-            className={`admin-markdown-textarea block w-full min-w-0 resize-y border-0 bg-transparent px-3 py-2 text-sm leading-relaxed outline-none ${
-              layout === "wide" ? "min-h-[min(70vh,720px)] flex-1" : ""
+        {showEditor ? (
+          <div
+            className={`min-w-0 overflow-hidden rounded-lg border border-border bg-card ${
+              layout === "wide" && mode === "split"
+                ? "flex min-h-[min(70vh,720px)] flex-col"
+                : ""
             }`}
-            placeholder="Пишите Markdown… Перетащите или вставьте (Ctrl+V) изображение."
-          />
-        </div>
-        <div
-          className={`min-w-0 overflow-hidden rounded-lg border border-border bg-card p-4 ${
-            layout === "wide"
-              ? "max-h-[min(70vh,720px)] overflow-y-auto xl:max-h-none"
-              : ""
-          }`}
-        >
-          <p className="mb-2 text-xs font-medium text-muted">Предпросмотр</p>
-          <div className="markdown-editor-preview prose prose-neutral dark:prose-invert min-w-0 max-w-none">
-            <MarkdownContent content={value || "*Пусто*"} />
+          >
+            <MarkdownCodemirror
+              ref={editorRef}
+              id={editorId}
+              value={value}
+              onChange={setValue}
+              minHeight={editorMinHeight}
+              wikiLinkTargets={linkTargets}
+              placeholder="Пишите Markdown… Перетащите или вставьте (Ctrl+V) изображение. Wikilinks: [[Заголовок поста]]"
+              onDrop={onDrop}
+              onDragOver={onDragOver}
+              onPaste={onPaste}
+              scrollContainerRef={handleEditorScrollContainer}
+              onScroll={handleEditorScroll}
+            />
           </div>
-        </div>
+        ) : null}
+
+        {showPreview ? (
+          <div
+            ref={previewScrollRef}
+            onScroll={handlePreviewScroll}
+            className={`min-w-0 overflow-hidden rounded-lg border border-border bg-card p-4 ${
+              layout === "wide" && mode === "split"
+                ? "max-h-[min(70vh,720px)] overflow-y-auto xl:max-h-none"
+                : mode === "preview"
+                  ? "min-h-[min(70vh,720px)] overflow-y-auto"
+                  : "max-h-[480px] overflow-y-auto"
+            }`}
+          >
+            <p className="mb-2 text-xs font-medium text-muted">Предпросмотр</p>
+            <div className="markdown-editor-preview prose prose-neutral dark:prose-invert min-w-0 max-w-none">
+              <MarkdownContent
+                content={value || "*Пусто*"}
+                linkTargets={linkTargets}
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {message ? <p className="text-xs text-muted">{message}</p> : null}
@@ -330,8 +438,12 @@ export function MarkdownEditor({
         />
       ) : null}
       <p className="text-xs text-muted">
-        Изображения: кнопка, drag-and-drop или Ctrl+V. Спойлер: выделите текст и нажмите
-        «Спойлер», либо вставьте блок :::spoiler … :::. Автосохранение каждые 500 мс.
+        CodeMirror: подсветка, сворачивание заголовков и блоков кода. Wikilinks{" "}
+        <code className="text-[0.7rem]">[[пост|alias]]</code>, callouts{" "}
+        <code className="text-[0.7rem]">{`> [!note]`}</code>, теги{" "}
+        <code className="text-[0.7rem]">#tag</code>, спойлеры{" "}
+        <code className="text-[0.7rem]">:::spoiler</code>. Автосохранение каждые
+        500 мс.
       </p>
     </div>
   );

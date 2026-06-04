@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { MarkdownEditor } from "@/components/admin/markdown-editor";
 import { StarRatingInput } from "@/components/ui/star-rating";
 import { Button } from "@/components/ui/button";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
@@ -94,15 +95,15 @@ export function BookForm({
         />
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium">Описание</label>
-        <textarea
-          name="description"
-          rows={4}
-          defaultValue={book?.description ?? ""}
-          className="w-full rounded-lg border border-border bg-card px-3 py-2"
-        />
-      </div>
+      <MarkdownEditor
+        key={book ? `draft-book-description-${book.id}` : "draft-book-description-new"}
+        name="description"
+        label="Описание (Markdown)"
+        initialValue={book?.description ?? ""}
+        draftKey={
+          book ? `draft-book-description-${book.id}` : "draft-book-description-new"
+        }
+      />
 
       <ImageUploadField
         name="coverImage"

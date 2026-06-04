@@ -14,6 +14,7 @@ import { listApprovedComments } from "@/lib/queries/comments";
 import {
   getPublishedPostBySlug,
 } from "@/lib/queries/posts";
+import { listPublishedWikiLinkTargets } from "@/lib/queries/wiki-link-targets";
 import { blogPostPath } from "@/lib/slug";
 import { articleJsonLd, siteUrl } from "@/lib/seo";
 
@@ -67,9 +68,10 @@ export default async function BlogPostPage({ params }: PageProps) {
   const post = await getPublishedPostBySlug(slug);
   if (!post) notFound();
 
-  const [comments, session] = await Promise.all([
+  const [comments, session, linkTargets] = await Promise.all([
     listApprovedComments(post.id),
     auth(),
+    listPublishedWikiLinkTargets(),
   ]);
   const viewerUserId = session?.user?.id ?? null;
   const jsonLd = articleJsonLd(post);
@@ -86,6 +88,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       <article className="mt-6 max-w-none">
         <PostArticleLayout
           content={post.content}
+          linkTargets={linkTargets}
           beforeContent={
             <PostTrackPlayer
               trackType={post.trackType}

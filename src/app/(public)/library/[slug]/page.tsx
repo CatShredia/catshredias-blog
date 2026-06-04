@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { getBookBySlug } from "@/lib/queries/books";
+import { listPublishedWikiLinkTargets } from "@/lib/queries/wiki-link-targets";
 import { formatDateRu } from "@/lib/dates";
 import { blogPostPath, libraryBookPath } from "@/lib/slug";
 import { siteUrl } from "@/lib/seo";
@@ -36,7 +37,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BookPage({ params }: PageProps) {
   const { slug } = await params;
-  const book = await getBookBySlug(slug);
+  const [book, linkTargets] = await Promise.all([
+    getBookBySlug(slug),
+    listPublishedWikiLinkTargets(),
+  ]);
   if (!book) notFound();
 
   return (
@@ -84,7 +88,7 @@ export default async function BookPage({ params }: PageProps) {
       {book.description ? (
         <Section title="О книге" className="mt-10">
           <div className="max-w-3xl prose prose-neutral dark:prose-invert">
-            <MarkdownContent content={book.description} />
+            <MarkdownContent content={book.description} linkTargets={linkTargets} />
           </div>
         </Section>
       ) : null}
@@ -107,7 +111,10 @@ export default async function BookPage({ params }: PageProps) {
             ) : null}
           </p>
           <article className="mt-6 max-w-3xl">
-            <MarkdownContent content={book.reviewPost.content} />
+            <MarkdownContent
+              content={book.reviewPost.content}
+              linkTargets={linkTargets}
+            />
           </article>
         </Section>
       ) : null}

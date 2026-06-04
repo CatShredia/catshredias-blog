@@ -8,6 +8,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { getProjectBySlug } from "@/lib/queries/projects";
+import { listPublishedWikiLinkTargets } from "@/lib/queries/wiki-link-targets";
 import { portfolioProjectPath } from "@/lib/slug";
 import { projectJsonLd, siteUrl } from "@/lib/seo";
 
@@ -39,7 +40,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProjectPage({ params }: PageProps) {
   const { slug } = await params;
-  const project = await getProjectBySlug(slug);
+  const [project, linkTargets] = await Promise.all([
+    getProjectBySlug(slug),
+    listPublishedWikiLinkTargets(),
+  ]);
   if (!project) notFound();
 
   const jsonLd = projectJsonLd(project);
@@ -79,14 +83,14 @@ export default async function ProjectPage({ params }: PageProps) {
 
       <Section title="Описание" compact>
         <div className="max-w-3xl text-muted">
-          <MarkdownContent content={project.description} />
+          <MarkdownContent content={project.description} linkTargets={linkTargets} />
         </div>
       </Section>
 
       {project.problem ? (
         <Section title="Проблема" compact>
           <div className="max-w-3xl text-muted">
-            <MarkdownContent content={project.problem} />
+            <MarkdownContent content={project.problem} linkTargets={linkTargets} />
           </div>
         </Section>
       ) : null}
@@ -94,7 +98,7 @@ export default async function ProjectPage({ params }: PageProps) {
       {project.solution ? (
         <Section title="Решение" compact>
           <div className="max-w-3xl text-muted">
-            <MarkdownContent content={project.solution} />
+            <MarkdownContent content={project.solution} linkTargets={linkTargets} />
           </div>
         </Section>
       ) : null}
@@ -102,7 +106,7 @@ export default async function ProjectPage({ params }: PageProps) {
       {project.result ? (
         <Section title="Результат" compact>
           <div className="max-w-3xl text-muted">
-            <MarkdownContent content={project.result} />
+            <MarkdownContent content={project.result} linkTargets={linkTargets} />
           </div>
         </Section>
       ) : null}

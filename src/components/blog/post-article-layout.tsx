@@ -4,18 +4,21 @@ import { useMemo, useState } from "react";
 
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { extractMarkdownHeadings } from "@/lib/markdown-headings";
+import type { WikiLinkTarget } from "@/lib/markdown-wikilink";
 
 type PostArticleLayoutProps = {
   content: string;
   children: React.ReactNode;
   /** Плеер / блок перед текстом статьи */
   beforeContent?: React.ReactNode;
+  linkTargets?: WikiLinkTarget[];
 };
 
 export function PostArticleLayout({
   content,
   children,
   beforeContent,
+  linkTargets = [],
 }: PostArticleLayoutProps) {
   const headings = useMemo(() => extractMarkdownHeadings(content), [content]);
   const [tocOpen, setTocOpen] = useState(true);
@@ -65,7 +68,7 @@ export function PostArticleLayout({
           {children}
           {beforeContent ? <div className="mt-6">{beforeContent}</div> : null}
           <div className="mt-8">
-            <MarkdownContent content={content} />
+            <MarkdownContent content={content} linkTargets={linkTargets} />
           </div>
         </div>
 
