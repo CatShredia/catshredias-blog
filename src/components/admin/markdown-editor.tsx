@@ -101,6 +101,7 @@ export function MarkdownEditor({
   );
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevDraftKeyRef = useRef(draftKey);
+  const pendingSearchOpenRef = useRef(false);
   const linkTargets = linkTargetsProp ?? fetchedLinkTargets;
 
   const editorMinHeight =
@@ -137,6 +138,15 @@ export function MarkdownEditor({
     prevDraftKeyRef.current = draftKey;
     setValue(readEditorDraft(draftKey, initialValue));
   }, [draftKey, initialValue]);
+
+  useEffect(() => {
+    if (!pendingSearchOpenRef.current || mode === "preview") return;
+    pendingSearchOpenRef.current = false;
+    requestAnimationFrame(() => {
+      editorRef.current?.focus();
+      editorRef.current?.openSearch();
+    });
+  }, [mode]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -317,6 +327,16 @@ export function MarkdownEditor({
     editorRef.current?.refreshLayout();
   }, []);
 
+  const openEditorSearch = useCallback(() => {
+    if (mode === "preview") {
+      pendingSearchOpenRef.current = true;
+      setMode("split");
+      return;
+    }
+    editorRef.current?.focus();
+    editorRef.current?.openSearch();
+  }, [mode]);
+
   const editorPane = (
     <MarkdownCodemirror
       ref={editorRef}
@@ -338,6 +358,14 @@ export function MarkdownEditor({
   const previewBody = (
     <>
       <p className="mb-2 shrink-0 text-xs font-medium text-muted">Предпросмотр</p>
+      <MarkdownFloatingToc
+        content={value}
+        scrollContainerRef={previewScrollRef}
+        placement="sticky-top"
+        stickyTopClass="top-0"
+        defaultOpen={false}
+        storageKey={`admin-markdown-toc-${layout}`}
+      />
       <div className="markdown-editor-preview prose prose-neutral dark:prose-invert min-w-0 max-w-none">
         <MarkdownContent content={value || "*Пусто*"} linkTargets={linkTargets} />
       </div>
@@ -345,12 +373,7 @@ export function MarkdownEditor({
   );
 
   const previewShell = (scrollClassName: string) => (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card">
-        <MarkdownFloatingToc
-          content={value}
-          scrollContainerRef={previewScrollRef}
-          storageKey={`admin-markdown-toc-${layout}`}
-        />
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card">
       <div
         ref={previewScrollRef}
         onScroll={handlePreviewScroll}
@@ -393,6 +416,14 @@ export function MarkdownEditor({
               Preview
             </button>
           </div>
+          <button
+            type="button"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
+            onClick={openEditorSearch}
+            title="Ctrl+F — поиск, Ctrl+H — замена"
+          >
+            Поиск
+          </button>
           <button
             type="button"
             className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card disabled:opacity-50"
@@ -527,7 +558,8 @@ export function MarkdownEditor({
         />
       ) : null}
       <p className="text-xs text-muted">
-        CodeMirror: подсветка, сворачивание заголовков и блоков кода. В режиме Split
+        CodeMirror: поиск и замена (Ctrl+F / Ctrl+H), подсветка, сворачивание
+        заголовков и блоков кода. В режиме Split
         перетащите границу между колонками. Wikilinks{" "}
         <code className="text-[0.7rem]">[[пост|alias]]</code>, callouts{" "}
         <code className="text-[0.7rem]">{`> [!note]`}</code>, теги{" "}
