@@ -24,6 +24,7 @@ export function PostTrackPlayer({
   if (trackType === PostTrackType.UPLOAD && trackAudioUrl) {
     return (
       <UploadedTrackPlayer
+        key={trackAudioUrl}
         src={trackAudioUrl}
         title={trackTitle}
         artist={trackArtist}

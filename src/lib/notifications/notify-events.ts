@@ -1,4 +1,4 @@
-import type { ContactMessage, Report } from "@prisma/client";
+import type { ContactMessage } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { blogPostPath } from "@/lib/slug";

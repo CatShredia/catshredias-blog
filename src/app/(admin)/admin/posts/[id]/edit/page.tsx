@@ -37,6 +37,7 @@ export default async function EditPostPage({ params, searchParams }: PageProps) 
 
       <div className="mt-6">
         <PostForm
+          key={`${post.id}-${query.saved === "1" ? "saved" : "edit"}`}
           mode="edit"
           post={post}
           saveAction={updateAction}

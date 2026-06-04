@@ -1,4 +1,5 @@
 import { PostStatus, PostTrackType } from "@prisma/client";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 
 import { trackEmbedInputFromStored } from "@/lib/post-track";
 
@@ -121,4 +122,70 @@ export function writePostFormDraft(storageKey: string, draft: PostFormDraft) {
 export function clearPostFormDraft(storageKey: string) {
   if (typeof window === "undefined") return;
   localStorage.removeItem(storageKey);
+}
+
+const draftListeners = new Set<() => void>();
+
+function subscribeDraftListeners(callback: () => void) {
+  draftListeners.add(callback);
+  return () => {
+    draftListeners.delete(callback);
+  };
+}
+
+function notifyDraftListeners() {
+  draftListeners.forEach((listener) => listener());
+}
+
+function mergeDraftUpdate(
+  current: PostFormDraft,
+  update: Partial<PostFormDraft>,
+): PostFormDraft {
+  return {
+    ...current,
+    ...update,
+    ...(update.track ? { track: { ...current.track, ...update.track } } : {}),
+  };
+}
+
+/** Черновик формы поста с гидрацией из localStorage без setState в useEffect. */
+export function usePostFormDraft(
+  storageKey: string,
+  serverFallback: PostFormDraft,
+  options?: { syncFromServer?: boolean },
+) {
+  const syncFromServer = options?.syncFromServer ?? false;
+  const didSyncClearRef = useRef(false);
+
+  const getSnapshot = useCallback(() => {
+    if (syncFromServer && typeof window !== "undefined") {
+      if (!didSyncClearRef.current) {
+        didSyncClearRef.current = true;
+        clearPostFormDraft(storageKey);
+      }
+      return serverFallback;
+    }
+    return readPostFormDraft(storageKey, serverFallback);
+  }, [storageKey, serverFallback, syncFromServer]);
+
+  const draft = useSyncExternalStore(
+    subscribeDraftListeners,
+    getSnapshot,
+    () => serverFallback,
+  );
+
+  const setDraft = useCallback(
+    (update: Partial<PostFormDraft> | ((prev: PostFormDraft) => PostFormDraft)) => {
+      const current = readPostFormDraft(storageKey, serverFallback);
+      const next =
+        typeof update === "function"
+          ? update(current)
+          : mergeDraftUpdate(current, update);
+      writePostFormDraft(storageKey, next);
+      notifyDraftListeners();
+    },
+    [storageKey, serverFallback],
+  );
+
+  return { draft, setDraft };
 }

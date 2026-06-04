@@ -57,15 +57,6 @@ export function PostTrackField({ value, onChange }: PostTrackFieldProps) {
     onChange({ ...value, ...partial });
   }
 
-  function clearUploadMeta() {
-    patch({
-      audioUrl: "",
-      trackTitle: "",
-      trackArtist: "",
-      coverImage: "",
-    });
-  }
-
   function selectType(next: PostTrackType) {
     setError(null);
     if (next === PostTrackType.NONE) {

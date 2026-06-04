@@ -91,13 +91,6 @@ export function UploadedTrackPlayer({
     };
   }, [src, syncDuration]);
 
-  useEffect(() => {
-    setCurrent(0);
-    setDuration(0);
-    setPlaying(false);
-    seekingRef.current = false;
-  }, [src]);
-
   function togglePlay() {
     const audio = audioRef.current;
     if (!audio) return;

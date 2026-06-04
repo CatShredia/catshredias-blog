@@ -2,22 +2,19 @@
 
 import { PostStatus, PostTrackType } from "@prisma/client";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useActionState, useState } from "react";
+import { useMemo, useActionState } from "react";
 
 import type { PostFormState } from "@/app/(admin)/admin/posts/actions";
 import { MarkdownEditor } from "@/components/admin/markdown-editor";
 import { PostTrackField } from "@/components/admin/post-track-field";
 import { Button } from "@/components/ui/button";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
-import { clearEditorDraft } from "@/lib/editor-draft";
 import { generatePostSlug } from "@/lib/post-slug";
 import {
-  clearPostFormDraft,
   defaultPostFormDraft,
   postFormDraftFromPost,
   postFormDraftStorageKey,
-  readPostFormDraft,
-  writePostFormDraft,
+  usePostFormDraft,
   type PostFormDraft,
 } from "@/lib/post-form-draft";
 
@@ -59,18 +56,6 @@ type PostFormProps = {
 
 const initialActionState: PostFormState = {};
 
-function loadDraft(
-  storageKey: string,
-  serverFallback: PostFormDraft,
-  options: { syncFromServer: boolean },
-) {
-  if (options.syncFromServer) {
-    clearPostFormDraft(storageKey);
-    return serverFallback;
-  }
-  return readPostFormDraft(storageKey, serverFallback);
-}
-
 export function PostForm({
   mode,
   post,
@@ -89,38 +74,12 @@ export function PostForm({
     [post],
   );
 
-  const [draft, setDraft] = useState<PostFormDraft>(() =>
-    loadDraft(metaStorageKey, serverFallback, {
-      syncFromServer: syncContentFromServer,
-    }),
-  );
-
-  const hydratedRef = useRef(false);
-
-  useEffect(() => {
-    if (hydratedRef.current) return;
-    hydratedRef.current = true;
-    if (syncContentFromServer) return;
-    setDraft(readPostFormDraft(metaStorageKey, serverFallback));
-  }, [metaStorageKey, serverFallback, syncContentFromServer]);
-
-  useEffect(() => {
-    if (syncContentFromServer) {
-      clearPostFormDraft(metaStorageKey);
-      clearEditorDraft(draftKey);
-      setDraft(serverFallback);
-    }
-  }, [syncContentFromServer, metaStorageKey, draftKey, serverFallback]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      writePostFormDraft(metaStorageKey, draft);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [draft, metaStorageKey]);
+  const { draft, setDraft } = usePostFormDraft(metaStorageKey, serverFallback, {
+    syncFromServer: syncContentFromServer,
+  });
 
   function updateDraft(partial: Partial<PostFormDraft>) {
-    setDraft((prev) => ({ ...prev, ...partial }));
+    setDraft(partial);
   }
 
   return (
