@@ -9,8 +9,13 @@ import {
   syntaxHighlighting,
 } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
+import {
+  openSearchPanel,
+  search,
+  searchKeymap,
+} from "@codemirror/search";
 import { EditorSelection } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
 import {
   forwardRef,
@@ -29,6 +34,8 @@ export type MarkdownCodemirrorHandle = {
   getSelection: () => { from: number; to: number; text: string };
   focus: () => void;
   refreshLayout: () => void;
+  /** Открыть панель поиска и замены (Ctrl+F / Ctrl+H) */
+  openSearch: () => void;
 };
 
 type MarkdownCodemirrorProps = {
@@ -138,6 +145,46 @@ const adminEditorTheme = EditorView.theme({
     border: "none",
     color: "var(--muted)",
   },
+  ".cm-panels": {
+    backgroundColor: "var(--card)",
+    color: "var(--fg)",
+    borderBottom: "1px solid var(--border)",
+  },
+  ".cm-panel.cm-search": {
+    backgroundColor: "var(--card)",
+    fontSize: "0.75rem",
+  },
+  ".cm-panel.cm-search input.cm-textfield": {
+    backgroundColor: "var(--bg)",
+    color: "var(--fg)",
+    border: "1px solid var(--border)",
+    borderRadius: "0.375rem",
+    padding: "0.2rem 0.45rem",
+    fontSize: "inherit",
+  },
+  ".cm-panel.cm-search button": {
+    backgroundColor: "transparent",
+    color: "var(--fg)",
+    border: "1px solid var(--border)",
+    borderRadius: "0.375rem",
+    padding: "0.15rem 0.45rem",
+    fontSize: "inherit",
+    cursor: "pointer",
+  },
+  ".cm-panel.cm-search button:hover": {
+    backgroundColor: "color-mix(in srgb, var(--border) 35%, transparent)",
+  },
+  ".cm-panel.cm-search label": {
+    color: "var(--muted)",
+  },
+  ".cm-searchMatch": {
+    backgroundColor:
+      "color-mix(in srgb, var(--accent) 22%, transparent) !important",
+  },
+  ".cm-searchMatch.cm-searchMatch-selected": {
+    backgroundColor:
+      "color-mix(in srgb, var(--accent) 42%, transparent) !important",
+  },
 });
 
 export const MarkdownCodemirror = forwardRef<
@@ -206,6 +253,11 @@ export const MarkdownCodemirror = forwardRef<
       markdownHeadingFold,
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       EditorView.lineWrapping,
+      search({ top: true }),
+      keymap.of([
+        ...searchKeymap,
+        { key: "Mod-h", run: openSearchPanel },
+      ]),
       adminEditorTheme,
       eventHandlers,
       autocompletion({
@@ -254,6 +306,12 @@ export const MarkdownCodemirror = forwardRef<
       },
       refreshLayout() {
         viewRef.current?.requestMeasure();
+      },
+      openSearch() {
+        const view = viewRef.current;
+        if (!view) return;
+        view.focus();
+        openSearchPanel(view);
       },
     }),
     [],

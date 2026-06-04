@@ -19,19 +19,19 @@ export function PostArticleLayout({
   linkTargets = [],
 }: PostArticleLayoutProps) {
   return (
-    <>
+    <div className="min-w-0">
+      {children}
       <MarkdownFloatingToc
         content={content}
-        placement="fixed"
+        placement="sticky-top"
+        stickyTopClass="top-24"
+        defaultOpen={false}
         storageKey="blog-post-toc"
       />
-      <div className="min-w-0">
-        {children}
-        {beforeContent ? <div className="mt-6">{beforeContent}</div> : null}
-        <div className="mt-8">
-          <MarkdownContent content={content} linkTargets={linkTargets} />
-        </div>
+      {beforeContent ? <div className="mt-6">{beforeContent}</div> : null}
+      <div className="mt-8">
+        <MarkdownContent content={content} linkTargets={linkTargets} />
       </div>
-    </>
+    </div>
   );
 }

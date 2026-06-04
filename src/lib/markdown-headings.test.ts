@@ -20,4 +20,36 @@ describe("extractMarkdownHeadings", () => {
   it("ignores single # without space", () => {
     expect(extractMarkdownHeadings("#not-a-heading")).toEqual([]);
   });
+
+  it("ignores ordered and unordered lists", () => {
+    const md = `## Section
+1. Создать пользователя
+2. Дать права sudo
+- пункт один
+* пункт два
+### Real subsection`;
+    expect(extractMarkdownHeadings(md)).toEqual([
+      { level: 2, text: "Section", id: "section" },
+      { level: 3, text: "Real subsection", id: "real-subsection" },
+    ]);
+  });
+
+  it("ignores headings that look like numbered list steps", () => {
+    const md = `## 1. Создать пользователя
+## 2. Дать права sudo
+## Настоящий раздел`;
+    expect(extractMarkdownHeadings(md)).toEqual([
+      { level: 2, text: "Настоящий раздел", id: "настоящий-раздел" },
+    ]);
+  });
+
+  it("ignores headings inside fenced code", () => {
+    const md = `\`\`\`
+## not a toc item
+\`\`\`
+## Visible`;
+    expect(extractMarkdownHeadings(md)).toEqual([
+      { level: 2, text: "Visible", id: "visible" },
+    ]);
+  });
 });
