@@ -40,5 +40,20 @@ jobs:
             docker compose build web migrate
             docker compose --profile tools run --rm migrate
             docker compose up -d --force-recreate web
-            curl -sf https://catshredia.ru/api/health
+            echo "Waiting for health..."
+            ok=0
+            for i in $(seq 1 30); do
+              if curl -sf http://127.0.0.1:3000/api/health >/dev/null; then
+                ok=1
+                break
+              fi
+              sleep 2
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "Health check failed"
+              docker compose logs --tail=80 web
+              exit 1
+            fi
+            curl -sf http://127.0.0.1:3000/api/health
+            echo ""
             echo "Deploy OK"
