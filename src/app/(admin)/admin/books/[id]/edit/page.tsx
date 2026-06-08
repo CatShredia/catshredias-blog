@@ -44,9 +44,16 @@ export default async function EditBookPage({ params, searchParams }: PageProps) 
           Сохранено.
         </p>
       ) : null}
-      <div className="mt-8">
+      <div className="mt-4">
+        <Button type="submit" form="book-edit-form">
+          Сохранить
+        </Button>
+      </div>
+      <div className="mt-6">
         <BookForm
           mode="edit"
+          formId="book-edit-form"
+          hideSubmit
           book={book}
           saveAction={updateAction}
           publishedPosts={publishedPosts}

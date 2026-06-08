@@ -16,6 +16,10 @@ import { blogPostPath } from "@/lib/slug";
 
 type BookFormProps = {
   mode: "create" | "edit";
+  /** id формы — для кнопки submit вне формы (страница редактирования) */
+  formId?: string;
+  /** Скрыть кнопку внизу формы (submit вынесен на страницу) */
+  hideSubmit?: boolean;
   saveAction: (formData: FormData) => Promise<void>;
   book?: {
     id: string;
@@ -41,6 +45,8 @@ type BookFormProps = {
 
 export function BookForm({
   mode,
+  formId,
+  hideSubmit = false,
   book,
   saveAction,
   publishedPosts = [],
@@ -56,7 +62,7 @@ export function BookForm({
   const [linkMessage, setLinkMessage] = useState<string | null>(null);
 
   return (
-    <form action={saveAction} className="space-y-6">
+    <form id={formId} action={saveAction} className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">Название</label>
@@ -218,7 +224,11 @@ export function BookForm({
         </div>
       ) : null}
 
-      <Button type="submit">{mode === "create" ? "Добавить книгу" : "Сохранить"}</Button>
+      {hideSubmit ? null : (
+        <Button type="submit">
+          {mode === "create" ? "Добавить книгу" : "Сохранить"}
+        </Button>
+      )}
     </form>
   );
 }
