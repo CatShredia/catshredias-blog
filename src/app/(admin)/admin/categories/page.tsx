@@ -3,6 +3,8 @@ import Link from "next/link";
 import {
   createCategoryAction,
   deleteCategoryAction,
+  getCategoryPostsAction,
+  transferCategoryPostsAction,
   updateCategoryAction,
 } from "@/app/(admin)/admin/categories/actions";
 import { AdminTaxonomyCreateForm } from "@/components/admin/admin-taxonomy-form";
@@ -20,8 +22,8 @@ export default async function AdminCategoriesPage() {
       </Link>
       <h1 className="mt-4 text-2xl font-bold">Категории</h1>
       <p className="mt-2 text-sm text-muted">
-        Справочник категорий для постов блога. В форме поста можно вводить
-        названия через запятую — они создадутся автоматически.
+        Справочник категорий для постов блога. Можно просматривать связанные посты,
+        переносить их в другие категории или снимать метку перед удалением.
       </p>
 
       <div className="mt-8 rounded-xl border border-border bg-card p-4">
@@ -33,6 +35,11 @@ export default async function AdminCategoriesPage() {
 
       <div className="mt-6">
         <AdminTaxonomyTable
+          kind="category"
+          targets={categories.map((category) => ({
+            id: category.id,
+            name: category.name,
+          }))}
           rows={categories.map((category) => ({
             id: category.id,
             name: category.name,
@@ -41,6 +48,8 @@ export default async function AdminCategoriesPage() {
             updateAction: updateCategoryAction.bind(null, category.id),
           }))}
           deleteAction={deleteCategoryAction}
+          loadPosts={getCategoryPostsAction}
+          transferAction={transferCategoryPostsAction}
         />
       </div>
     </AdminContainer>

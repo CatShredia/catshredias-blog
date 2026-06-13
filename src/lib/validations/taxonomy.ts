@@ -7,4 +7,17 @@ export const taxonomyFormSchema = z.object({
 export type TaxonomyFormState = {
   error?: string;
   fieldErrors?: Record<string, string[]>;
+  success?: string;
+};
+
+export const taxonomyTransferSchema = z.object({
+  sourceId: z.string().min(1),
+  targetId: z.string().optional(),
+  mode: z.enum(["replace", "add", "remove"]),
+  postIds: z.array(z.string().min(1)).min(1, "Выберите хотя бы один пост"),
+});
+
+export type TaxonomyTransferState = {
+  error?: string;
+  success?: string;
 };

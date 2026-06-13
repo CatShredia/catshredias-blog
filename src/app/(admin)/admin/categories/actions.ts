@@ -6,8 +6,14 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slug";
 import {
+  listPostsForTaxonomy,
+  transferTaxonomyPosts,
+} from "@/lib/taxonomy-posts";
+import {
   taxonomyFormSchema,
+  taxonomyTransferSchema,
   type TaxonomyFormState,
+  type TaxonomyTransferState,
 } from "@/lib/validations/taxonomy";
 
 export async function createCategoryAction(
@@ -83,4 +89,53 @@ export async function deleteCategoryAction(formData: FormData) {
   await prisma.category.delete({ where: { id } });
   revalidatePath("/admin/categories");
   revalidatePath("/blog");
+}
+
+export async function getCategoryPostsAction(categoryId: string) {
+  await requireAdmin();
+  return listPostsForTaxonomy("category", categoryId);
+}
+
+function revalidateCategoryPaths() {
+  revalidatePath("/admin/categories");
+  revalidatePath("/admin/tags");
+  revalidatePath("/admin/posts");
+  revalidatePath("/blog");
+}
+
+export async function transferCategoryPostsAction(
+  _prev: TaxonomyTransferState,
+  formData: FormData,
+): Promise<TaxonomyTransferState> {
+  await requireAdmin();
+
+  const parsed = taxonomyTransferSchema.safeParse({
+    sourceId: formData.get("sourceId"),
+    targetId: formData.get("targetId") || undefined,
+    mode: formData.get("mode"),
+    postIds: formData.getAll("postIds").map(String),
+  });
+
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message ?? "Некорректные данные";
+    return { error: message };
+  }
+
+  const { sourceId, targetId, mode, postIds } = parsed.data;
+
+  try {
+    const count = await transferTaxonomyPosts({
+      kind: "category",
+      sourceId,
+      targetId: targetId ?? null,
+      mode,
+      postIds,
+    });
+    revalidateCategoryPaths();
+    return { success: `Обновлено постов: ${count}` };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Не удалось перенести посты",
+    };
+  }
 }
