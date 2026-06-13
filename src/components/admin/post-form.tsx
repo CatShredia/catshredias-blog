@@ -45,6 +45,10 @@ type PostFormPost = {
 
 type PostFormProps = {
   mode: "create" | "edit";
+  /** id формы — для кнопки submit вне формы (страница редактирования) */
+  formId?: string;
+  /** Скрыть кнопку внизу формы (submit вынесен на страницу) */
+  hideSubmit?: boolean;
   saveAction: (
     prev: PostFormState,
     formData: FormData,
@@ -58,6 +62,8 @@ const initialActionState: PostFormState = {};
 
 export function PostForm({
   mode,
+  formId,
+  hideSubmit = false,
   post,
   saveAction,
   syncContentFromServer = false,
@@ -83,7 +89,7 @@ export function PostForm({
   }
 
   return (
-    <form action={action} className="space-y-6">
+    <form id={formId} action={action} className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-sm font-medium">Заголовок</label>
@@ -240,13 +246,15 @@ export function PostForm({
         ошибки или перезагрузки страницы).
       </p>
 
-      <Button type="submit" disabled={pending}>
-        {pending
-          ? "Сохранение…"
-          : mode === "create"
-            ? "Создать пост"
-            : "Сохранить"}
-      </Button>
+      {hideSubmit ? null : (
+        <Button type="submit" disabled={pending}>
+          {pending
+            ? "Сохранение…"
+            : mode === "create"
+              ? "Создать пост"
+              : "Сохранить"}
+        </Button>
+      )}
     </form>
   );
 }

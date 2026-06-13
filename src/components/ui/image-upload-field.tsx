@@ -25,6 +25,7 @@ export function ImageUploadField({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const cropAspect =
     aspect === "square" ? 1 : aspect === "wide" ? 16 / 9 : undefined;
@@ -53,12 +54,14 @@ export function ImageUploadField({
 
   function openCrop(file: File) {
     const url = URL.createObjectURL(file);
+    setPendingFile(file);
     setCropSrc(url);
   }
 
   function closeCrop() {
     if (cropSrc) URL.revokeObjectURL(cropSrc);
     setCropSrc(null);
+    setPendingFile(null);
   }
 
   function handleFile(file: File | undefined) {
@@ -117,6 +120,7 @@ export function ImageUploadField({
       {cropSrc ? (
         <ImageCropDialog
           imageSrc={cropSrc}
+          originalFile={pendingFile ?? undefined}
           aspect={cropAspect}
           onCancel={closeCrop}
           onComplete={(file) => {

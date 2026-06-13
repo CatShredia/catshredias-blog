@@ -8,6 +8,7 @@ import { cropImageToBlob } from "@/lib/crop-image";
 
 type ImageCropDialogProps = {
   imageSrc: string;
+  originalFile?: File;
   aspect?: number;
   onCancel: () => void;
   onComplete: (file: File) => void;
@@ -15,6 +16,7 @@ type ImageCropDialogProps = {
 
 export function ImageCropDialog({
   imageSrc,
+  originalFile,
   aspect,
   onCancel,
   onComplete,
@@ -84,12 +86,22 @@ export function ImageCropDialog({
           <Button type="button" variant="secondary" onClick={onCancel}>
             Отмена
           </Button>
+          {originalFile ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => onComplete(originalFile)}
+              disabled={processing}
+            >
+              Оригинальный размер
+            </Button>
+          ) : null}
           <Button
             type="button"
             onClick={() => void handleConfirm()}
             disabled={processing || !croppedArea}
           >
-            {processing ? "Сохранение…" : "Применить"}
+            {processing ? "Сохранение…" : "Применить обрезку"}
           </Button>
         </div>
       </div>

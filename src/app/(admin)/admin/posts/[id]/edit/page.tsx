@@ -34,11 +34,18 @@ export default async function EditPostPage({ params, searchParams }: PageProps) 
           Сохранено.
         </p>
       ) : null}
+      <div className="mt-4">
+        <Button type="submit" form="post-edit-form">
+          Сохранить
+        </Button>
+      </div>
 
       <div className="mt-6">
         <PostForm
           key={`${post.id}-${query.saved === "1" ? "saved" : "edit"}`}
           mode="edit"
+          formId="post-edit-form"
+          hideSubmit
           post={post}
           saveAction={updateAction}
           syncContentFromServer={query.saved === "1"}

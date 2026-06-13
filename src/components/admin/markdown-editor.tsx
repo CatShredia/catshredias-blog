@@ -97,7 +97,7 @@ export function MarkdownEditor({
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
-  const [pendingName, setPendingName] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [fetchedLinkTargets, setFetchedLinkTargets] = useState<WikiLinkTarget[]>(
     [],
   );
@@ -268,7 +268,7 @@ export function MarkdownEditor({
   const handleFile = useCallback(
     (file: File) => {
       if (file.type.startsWith("image/")) {
-        setPendingName(file.name);
+        setPendingFile(file);
         setCropSrc(URL.createObjectURL(file));
         return;
       }
@@ -582,19 +582,17 @@ export function MarkdownEditor({
       {cropSrc ? (
         <ImageCropDialog
           imageSrc={cropSrc}
+          originalFile={pendingFile ?? undefined}
           onCancel={() => {
             URL.revokeObjectURL(cropSrc);
             setCropSrc(null);
-            setPendingName(null);
+            setPendingFile(null);
           }}
           onComplete={(file) => {
             URL.revokeObjectURL(cropSrc);
             setCropSrc(null);
-            const named = pendingName
-              ? new File([file], pendingName, { type: file.type })
-              : file;
-            setPendingName(null);
-            void uploadFile(named);
+            setPendingFile(null);
+            void uploadFile(file);
           }}
         />
       ) : null}
