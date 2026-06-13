@@ -6,6 +6,8 @@ import {
   updatePostAction,
 } from "@/app/(admin)/admin/posts/actions";
 import { PostForm } from "@/components/admin/post-form";
+import { MarkdownEditorGuide } from "@/components/admin/markdown-editor-guide";
+import { PostDeleteButton } from "@/components/admin/post-delete-button";
 import { Button } from "@/components/ui/button";
 import { AdminContainer } from "@/components/ui/admin-container";
 import { getAdminPost } from "@/lib/queries/admin";
@@ -34,10 +36,14 @@ export default async function EditPostPage({ params, searchParams }: PageProps) 
           Сохранено.
         </p>
       ) : null}
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button type="submit" form="post-edit-form">
           Сохранить
         </Button>
+        <PostDeleteButton
+          action={deletePostAction.bind(null, id)}
+          postTitle={post.title}
+        />
       </div>
 
       <div className="mt-6">
@@ -52,11 +58,7 @@ export default async function EditPostPage({ params, searchParams }: PageProps) 
         />
       </div>
 
-      <form action={deletePostAction.bind(null, id)} className="mt-8">
-        <Button type="submit" variant="ghost">
-          Удалить пост
-        </Button>
-      </form>
+      <MarkdownEditorGuide />
     </AdminContainer>
   );
 }

@@ -758,20 +758,6 @@ export function MarkdownEditor({
           }}
         />
       ) : null}
-      <p className="text-xs text-muted">
-        CodeMirror: поиск и замена (Ctrl+F / Ctrl+H), подсветка, сворачивание
-        заголовков и блоков кода. В режиме Split
-        перетащите границу между колонками. Режим Live — предпросмотр с
-        редактированием блока по клику (как в Obsidian). Стили текста:{" "}
-        <code className="text-[0.7rem]">**жирный**</code>,{" "}
-        <code className="text-[0.7rem]">[semibold]полужирный[/semibold]</code>.
-        Wikilinks{" "}
-        <code className="text-[0.7rem]">[[пост|alias]]</code>, callouts{" "}
-        <code className="text-[0.7rem]">{`> [!note]`}</code>, теги{" "}
-        <code className="text-[0.7rem]">#tag</code>, спойлеры{" "}
-        <code className="text-[0.7rem]">:::spoiler</code>. Автосохранение каждые
-        500 мс.
-      </p>
     </div>
   );
 }
