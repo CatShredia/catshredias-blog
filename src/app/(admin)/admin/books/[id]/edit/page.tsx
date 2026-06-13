@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PostStatus } from "@prisma/client";
 
@@ -17,6 +18,13 @@ type PageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string }>;
 };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const book = await getAdminBook(id);
+  if (!book) return { title: "Редактирование книги" };
+  return { title: `Редактирование: ${book.title}` };
+}
 
 export default async function EditBookPage({ params, searchParams }: PageProps) {
   const { id } = await params;

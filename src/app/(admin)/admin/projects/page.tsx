@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
+
 import { AdminProjectsTable } from "@/components/admin/admin-projects-table";
 import { AdminContainer } from "@/components/ui/admin-container";
 import { ButtonLink } from "@/components/ui/button";
 import { listAdminProjects } from "@/lib/queries/admin";
+
+export const metadata: Metadata = {
+  title: "Проекты",
+};
 
 export default async function AdminProjectsPage() {
   const projects = await listAdminProjects();

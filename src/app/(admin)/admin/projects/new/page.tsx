@@ -1,8 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { createProjectAction } from "@/app/(admin)/admin/projects/actions";
 import { ProjectForm } from "@/components/admin/project-form";
 import { AdminContainer } from "@/components/ui/admin-container";
+
+export const metadata: Metadata = {
+  title: "Новый проект",
+};
 
 export default function NewProjectPage() {
   return (

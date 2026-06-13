@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import {
@@ -16,6 +17,13 @@ type PageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string }>;
 };
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const post = await getAdminPost(id);
+  if (!post) return { title: "Редактирование поста" };
+  return { title: `Редактирование: ${post.title}` };
+}
 
 export default async function EditPostPage({ params, searchParams }: PageProps) {
   const { id } = await params;

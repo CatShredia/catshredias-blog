@@ -1,7 +1,12 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 
 import { AdminLoginForm } from "@/components/admin/login-form";
 import { AdminContainer } from "@/components/ui/admin-container";
+
+export const metadata: Metadata = {
+  title: "Вход",
+};
 
 export default function AdminLoginPage() {
   return (

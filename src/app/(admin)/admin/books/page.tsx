@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
+
 import { AdminBooksTable } from "@/components/admin/admin-books-table";
 import { AdminContainer } from "@/components/ui/admin-container";
 import { ButtonLink } from "@/components/ui/button";
 import { listAdminBooks } from "@/lib/queries/books";
+
+export const metadata: Metadata = {
+  title: "Библиотека",
+};
 
 export default async function AdminBooksPage() {
   const books = await listAdminBooks();

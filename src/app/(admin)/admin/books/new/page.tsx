@@ -1,8 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { createBookAction } from "@/app/(admin)/admin/books/actions";
 import { BookForm } from "@/components/admin/book-form";
 import { AdminContainer } from "@/components/ui/admin-container";
+
+export const metadata: Metadata = {
+  title: "Новая книга",
+};
 
 export default function NewBookPage() {
   return (

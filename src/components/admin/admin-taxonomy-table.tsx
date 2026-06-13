@@ -6,6 +6,7 @@ import { AdminTaxonomyPostsPanel } from "@/components/admin/admin-taxonomy-posts
 import type { TaxonomyFormState, TaxonomyTransferState } from "@/lib/validations/taxonomy";
 import type { TaxonomyKind, TaxonomyPostSummary } from "@/lib/taxonomy-posts";
 import { Button } from "@/components/ui/button";
+import { IconTrash } from "@/components/ui/icons";
 
 const initialState: TaxonomyFormState = {};
 
@@ -80,18 +81,25 @@ function TaxonomyTableRow({
             </Button>
             <form action={deleteAction}>
               <input type="hidden" name="id" value={row.id} />
-              <Button
+              <button
                 type="submit"
-                variant="ghost"
+                className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-border text-muted hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={row.postsCount > 0}
                 title={
                   row.postsCount > 0
                     ? "Сначала перенесите или снимите метку с постов"
                     : "Удалить"
                 }
+                aria-label={`Удалить «${row.name}»`}
+                onClick={(event) => {
+                  if (row.postsCount > 0) return;
+                  if (!window.confirm(`Удалить «${row.name}»?`)) {
+                    event.preventDefault();
+                  }
+                }}
               >
-                Удалить
-              </Button>
+                <IconTrash />
+              </button>
             </form>
           </div>
         </div>

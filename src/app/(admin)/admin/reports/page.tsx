@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ReportStatus } from "@prisma/client";
 
 import { resolveReportAction } from "@/app/(admin)/admin/comments/actions";
@@ -14,6 +15,10 @@ const filters = [
   { label: "Отклонено", value: ReportStatus.DISMISSED },
   { label: "Все", value: "all" },
 ] as const;
+
+export const metadata: Metadata = {
+  title: "Жалобы",
+};
 
 export default async function AdminReportsPage({
   searchParams,

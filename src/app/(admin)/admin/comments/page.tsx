@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { CommentStatus } from "@prisma/client";
 
 import {
@@ -13,6 +14,10 @@ import { formatDateRu } from "@/lib/dates";
 import { blogPostPath } from "@/lib/slug";
 import { mapCommentAuthor } from "@/lib/deleted-user";
 import { countPendingReports, listAdminComments } from "@/lib/queries/comments";
+
+export const metadata: Metadata = {
+  title: "Комментарии",
+};
 
 export default async function AdminCommentsPage() {
   const [comments, pendingReports] = await Promise.all([

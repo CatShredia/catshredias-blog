@@ -1,8 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { createPostAction } from "@/app/(admin)/admin/posts/actions";
 import { PostForm } from "@/components/admin/post-form";
 import { AdminContainer } from "@/components/ui/admin-container";
+
+export const metadata: Metadata = {
+  title: "Новый пост",
+};
 
 export default function NewPostPage() {
   return (

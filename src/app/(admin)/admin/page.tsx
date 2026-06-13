@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { auth, signOut } from "@/lib/auth";
 import { AdminContainer } from "@/components/ui/admin-container";
@@ -7,6 +8,10 @@ import { listAdminPosts, listAdminProjects } from "@/lib/queries/admin";
 import { countUnreadNotifications } from "@/lib/notifications";
 import { countPendingReports, countUnseenComments } from "@/lib/queries/comments";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  title: "Панель управления",
+};
 
 export default async function AdminDashboardPage() {
   const session = await auth();

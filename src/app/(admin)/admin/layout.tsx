@@ -1,9 +1,17 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { AdminFooter } from "@/components/admin/admin-footer";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminContainer } from "@/components/ui/admin-container";
 import { auth } from "@/lib/auth";
+
+export const metadata: Metadata = {
+  title: {
+    default: "Админка",
+    template: "%s | Админка",
+  },
+};
 
 export default async function AdminLayout({
   children,

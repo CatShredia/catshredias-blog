@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
+
 import { PortfolioSettingsForm } from "@/components/admin/portfolio-settings-form";
 import { AdminContainer } from "@/components/ui/admin-container";
 import { getSiteSettings } from "@/lib/queries/site-settings";
+
+export const metadata: Metadata = {
+  title: "Портфолио",
+};
 
 export default async function PortfolioSettingsPage() {
   const settings = await getSiteSettings();

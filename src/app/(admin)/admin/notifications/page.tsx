@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { AdminNotificationType } from "@prisma/client";
 
 import {
@@ -34,6 +35,10 @@ const modeLabels = {
 
 type PageProps = {
   searchParams: Promise<{ filter?: string; highlight?: string }>;
+};
+
+export const metadata: Metadata = {
+  title: "Уведомления",
 };
 
 export default async function AdminNotificationsPage({ searchParams }: PageProps) {

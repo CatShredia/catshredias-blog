@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import {
   createCategoryAction,
@@ -11,6 +12,10 @@ import { AdminTaxonomyCreateForm } from "@/components/admin/admin-taxonomy-form"
 import { AdminTaxonomyTable } from "@/components/admin/admin-taxonomy-table";
 import { AdminContainer } from "@/components/ui/admin-container";
 import { listAdminCategories } from "@/lib/queries/admin";
+
+export const metadata: Metadata = {
+  title: "Категории",
+};
 
 export default async function AdminCategoriesPage() {
   const categories = await listAdminCategories();
