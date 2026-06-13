@@ -12,6 +12,10 @@ import {
   MarkdownCodemirror,
   type MarkdownCodemirrorHandle,
 } from "@/components/admin/markdown-codemirror";
+import {
+  MarkdownLiveEditor,
+  type MarkdownLiveEditorHandle,
+} from "@/components/admin/markdown-live-editor";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import { MarkdownFloatingToc } from "@/components/markdown/markdown-floating-toc";
 import { ImageCropDialog } from "@/components/ui/image-crop-dialog";
@@ -28,7 +32,7 @@ import {
 } from "@/lib/markdown-spoiler";
 import type { WikiLinkTarget } from "@/lib/markdown-wikilink";
 
-type EditorMode = "source" | "split" | "preview";
+type EditorMode = "source" | "split" | "preview" | "live";
 
 type MarkdownEditorProps = {
   name: string;
@@ -81,6 +85,7 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const editorId = useId();
   const editorRef = useRef<MarkdownCodemirrorHandle>(null);
+  const liveEditorRef = useRef<MarkdownLiveEditorHandle>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const editorScrollRef = useRef<HTMLElement | null>(null);
   const previewScrollRef = useRef<HTMLDivElement>(null);
@@ -140,7 +145,7 @@ export function MarkdownEditor({
   }, [draftKey, initialValue]);
 
   useEffect(() => {
-    if (!pendingSearchOpenRef.current || mode === "preview") return;
+    if (!pendingSearchOpenRef.current || mode === "preview" || mode === "live") return;
     pendingSearchOpenRef.current = false;
     requestAnimationFrame(() => {
       editorRef.current?.focus();
@@ -159,10 +164,19 @@ export function MarkdownEditor({
   }, [value, draftKey]);
 
   const insertSnippet = useCallback((snippet: string) => {
+    if (mode === "live") {
+      liveEditorRef.current?.appendSnippet(snippet);
+      return;
+    }
     editorRef.current?.insertAtSelection(snippet, false);
-  }, []);
+  }, [mode]);
 
   const insertSpoiler = useCallback(() => {
+    if (mode === "live") {
+      liveEditorRef.current?.appendSnippet(SPOILER_MARKDOWN_SNIPPET);
+      return;
+    }
+
     const handle = editorRef.current;
     if (!handle) {
       insertSnippet(SPOILER_MARKDOWN_SNIPPET);
@@ -176,15 +190,23 @@ export function MarkdownEditor({
     }
 
     handle.insertAtSelection(buildSpoilerMarkdown(text), true);
-  }, [insertSnippet]);
+  }, [insertSnippet, mode]);
 
   const insertCallout = useCallback(() => {
+    if (mode === "live") {
+      liveEditorRef.current?.appendSnippet(CALLOUT_MARKDOWN_SNIPPET);
+      return;
+    }
     editorRef.current?.insertAtSelection(CALLOUT_MARKDOWN_SNIPPET, false);
-  }, []);
+  }, [mode]);
 
   const insertTable = useCallback(() => {
+    if (mode === "live") {
+      liveEditorRef.current?.appendSnippet(TABLE_MARKDOWN_SNIPPET);
+      return;
+    }
     editorRef.current?.insertAtSelection(TABLE_MARKDOWN_SNIPPET, false);
-  }, []);
+  }, [mode]);
 
   const syncPreviewScroll = useCallback((source: "editor" | "preview") => {
     if (mode !== "split") return;
@@ -230,14 +252,18 @@ export function MarkdownEditor({
     }
 
     const data = (await response.json()) as { url: string };
-    if (file.type === "application/pdf") {
-      editorRef.current?.insertAtSelection(`[PDF](${data.url})`, false);
+    const snippet =
+      file.type === "application/pdf"
+        ? `[PDF](${data.url})`
+        : `![${file.name.replace(/\.[^.]+$/, "") || "image"}](${data.url})`;
+
+    if (mode === "live") {
+      liveEditorRef.current?.appendSnippet(snippet);
     } else {
-      const alt = file.name.replace(/\.[^.]+$/, "") || "image";
-      editorRef.current?.insertAtSelection(`![${alt}](${data.url})`, false);
+      editorRef.current?.insertAtSelection(snippet, false);
     }
     setMessage("Файл вставлен в текст");
-  }, []);
+  }, [mode]);
 
   const handleFile = useCallback(
     (file: File) => {
@@ -328,7 +354,7 @@ export function MarkdownEditor({
   }, []);
 
   const openEditorSearch = useCallback(() => {
-    if (mode === "preview") {
+    if (mode === "preview" || mode === "live") {
       pendingSearchOpenRef.current = true;
       setMode("split");
       return;
@@ -414,6 +440,13 @@ export function MarkdownEditor({
               onClick={() => setMode("preview")}
             >
               Preview
+            </button>
+            <button
+              type="button"
+              className={modeButtonClass(mode === "live")}
+              onClick={() => setMode("live")}
+            >
+              Live
             </button>
           </div>
           <button
@@ -519,6 +552,14 @@ export function MarkdownEditor({
             {previewShell("flex min-h-0 flex-1 flex-col overflow-y-auto p-4")}
           </Panel>
         </Group>
+      ) : mode === "live" ? (
+        <MarkdownLiveEditor
+          ref={liveEditorRef}
+          value={value}
+          onChange={setValue}
+          linkTargets={linkTargets}
+          minHeight={layout === "wide" ? "min(70vh, 720px)" : "min(60vh, 520px)"}
+        />
       ) : (
         <div className="grid min-w-0 gap-4">
           {showEditor ? (
@@ -560,7 +601,8 @@ export function MarkdownEditor({
       <p className="text-xs text-muted">
         CodeMirror: поиск и замена (Ctrl+F / Ctrl+H), подсветка, сворачивание
         заголовков и блоков кода. В режиме Split
-        перетащите границу между колонками. Wikilinks{" "}
+        перетащите границу между колонками. Режим Live — предпросмотр с
+        редактированием блока по клику (как в Obsidian). Wikilinks{" "}
         <code className="text-[0.7rem]">[[пост|alias]]</code>, callouts{" "}
         <code className="text-[0.7rem]">{`> [!note]`}</code>, теги{" "}
         <code className="text-[0.7rem]">#tag</code>, спойлеры{" "}

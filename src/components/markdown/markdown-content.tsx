@@ -11,6 +11,7 @@ import { useMemo } from "react";
 import type { Pluggable } from "unified";
 
 import { MarkdownCallout } from "@/components/markdown/markdown-callout";
+import { MarkdownCodeBlock } from "@/components/markdown/markdown-code-block";
 import { MarkdownImage } from "@/components/markdown/markdown-image";
 import { remarkTags } from "@/lib/markdown-tags";
 import { splitMarkdownSpoilers } from "@/lib/markdown-spoiler";
@@ -55,10 +56,13 @@ function createMarkdownComponents(): Components {
         {children}
       </a>
     ),
+    pre: ({ children, ...props }) => (
+      <MarkdownCodeBlock {...props}>{children}</MarkdownCodeBlock>
+    ),
   };
 }
 
-function MarkdownBlock({
+export function MarkdownBlock({
   content,
   linkTargets,
 }: {
@@ -96,16 +100,21 @@ export function MarkdownContent({
   content,
   parseSpoilers = true,
   linkTargets = EMPTY_LINK_TARGETS,
+  wrapProse = true,
 }: {
   content: string;
   parseSpoilers?: boolean;
   linkTargets?: WikiLinkTarget[];
+  wrapProse?: boolean;
 }) {
-  const body = (children: ReactNode) => (
-    <div className="prose prose-neutral dark:prose-invert max-w-none">
-      {children}
-    </div>
-  );
+  const body = (children: ReactNode) =>
+    wrapProse ? (
+      <div className="prose prose-neutral dark:prose-invert max-w-none">
+        {children}
+      </div>
+    ) : (
+      children
+    );
 
   if (!parseSpoilers) {
     return body(<MarkdownBlock content={content} linkTargets={linkTargets} />);

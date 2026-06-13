@@ -53,6 +53,8 @@ type MarkdownCodemirrorProps = {
   onDrop?: (event: DragEvent) => boolean | void;
   onDragOver?: (event: DragEvent) => boolean | void;
   onPaste?: (event: ClipboardEvent) => boolean | void;
+  onBlur?: () => void;
+  onEscape?: () => void;
 };
 
 function wikiLinkCompletionSource(targetsRef: RefObject<WikiLinkTarget[]>) {
@@ -205,6 +207,8 @@ export const MarkdownCodemirror = forwardRef<
     onDrop,
     onDragOver,
     onPaste,
+    onBlur,
+    onEscape,
   },
   ref,
 ) {
@@ -214,6 +218,8 @@ export const MarkdownCodemirror = forwardRef<
   const onDragOverRef = useRef(onDragOver);
   const onPasteRef = useRef(onPaste);
   const onScrollRef = useRef(onScroll);
+  const onBlurRef = useRef(onBlur);
+  const onEscapeRef = useRef(onEscape);
   const scrollContainerRefCallback = useRef(scrollContainerRef);
   const { resolvedTheme } = useTheme();
 
@@ -226,8 +232,10 @@ export const MarkdownCodemirror = forwardRef<
     onDragOverRef.current = onDragOver;
     onPasteRef.current = onPaste;
     onScrollRef.current = onScroll;
+    onBlurRef.current = onBlur;
+    onEscapeRef.current = onEscape;
     scrollContainerRefCallback.current = scrollContainerRef;
-  }, [onDrop, onDragOver, onPaste, onScroll, scrollContainerRef]);
+  }, [onDrop, onDragOver, onPaste, onScroll, onBlur, onEscape, scrollContainerRef]);
 
   const extensions = useMemo(() => {
     const eventHandlers = EditorView.domEventHandlers({
@@ -239,6 +247,10 @@ export const MarkdownCodemirror = forwardRef<
       },
       paste(event) {
         return onPasteRef.current?.(event) ?? false;
+      },
+      blur() {
+        onBlurRef.current?.();
+        return false;
       },
       scroll(event, view) {
         onScrollRef.current?.(event);
@@ -257,6 +269,13 @@ export const MarkdownCodemirror = forwardRef<
       keymap.of([
         ...searchKeymap,
         { key: "Mod-h", run: openSearchPanel },
+        {
+          key: "Escape",
+          run: () => {
+            onEscapeRef.current?.();
+            return Boolean(onEscapeRef.current);
+          },
+        },
       ]),
       adminEditorTheme,
       eventHandlers,
