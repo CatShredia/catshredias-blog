@@ -25,6 +25,16 @@ import {
   writeEditorDraft,
 } from "@/lib/editor-draft";
 import { CALLOUT_MARKDOWN_SNIPPET } from "@/lib/markdown-callout";
+import {
+  EDITOR_SHORTCUTS,
+  formatShortcutKeys,
+  matchEditorShortcut,
+} from "@/lib/markdown-editor-shortcuts";
+import {
+  buildTextStyleMarkdown,
+  MARKDOWN_TEXT_STYLES,
+  type MarkdownTextStyleId,
+} from "@/lib/markdown-text-style";
 import { TABLE_MARKDOWN_SNIPPET } from "@/lib/markdown-table";
 import {
   buildSpoilerMarkdown,
@@ -87,6 +97,8 @@ export function MarkdownEditor({
   const editorRef = useRef<MarkdownCodemirrorHandle>(null);
   const liveEditorRef = useRef<MarkdownLiveEditorHandle>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const textStyleMenuRef = useRef<HTMLDivElement>(null);
   const editorScrollRef = useRef<HTMLElement | null>(null);
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const syncingScrollRef = useRef(false);
@@ -104,6 +116,7 @@ export function MarkdownEditor({
   const [splitDirection, setSplitDirection] = useState<"horizontal" | "vertical">(
     "horizontal",
   );
+  const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevDraftKeyRef = useRef(draftKey);
   const pendingSearchOpenRef = useRef(false);
@@ -207,6 +220,33 @@ export function MarkdownEditor({
     }
     editorRef.current?.insertAtSelection(TABLE_MARKDOWN_SNIPPET, false);
   }, [mode]);
+
+  const insertTextStyle = useCallback(
+    (styleId: MarkdownTextStyleId) => {
+      const placeholder = "текст";
+      const snippet = buildTextStyleMarkdown(styleId, placeholder);
+
+      if (mode === "live") {
+        liveEditorRef.current?.appendSnippet(snippet);
+        return;
+      }
+
+      const handle = editorRef.current;
+      if (!handle) return;
+      const { text } = handle.getSelection();
+      handle.insertAtSelection(
+        buildTextStyleMarkdown(styleId, text.trim() || placeholder),
+        true,
+      );
+    },
+    [mode],
+  );
+
+  const resetDraft = useCallback(() => {
+    clearEditorDraft(draftKey);
+    setValue(initialValue);
+    setMessage("Черновик очищен");
+  }, [draftKey, initialValue]);
 
   const syncPreviewScroll = useCallback((source: "editor" | "preview") => {
     if (mode !== "split") return;
@@ -363,6 +403,77 @@ export function MarkdownEditor({
     editorRef.current?.openSearch();
   }, [mode]);
 
+  useEffect(() => {
+    if (!textStyleMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!(event.target instanceof Node)) return;
+      if (textStyleMenuRef.current?.contains(event.target)) return;
+      setTextStyleMenuOpen(false);
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+    return () => window.removeEventListener("mousedown", handlePointerDown);
+  }, [textStyleMenuOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const shortcut = matchEditorShortcut(event);
+      if (!shortcut) return;
+
+      event.preventDefault();
+
+      switch (shortcut) {
+        case "source":
+          setMode("source");
+          return;
+        case "split":
+          setMode("split");
+          return;
+        case "preview":
+          setMode("preview");
+          return;
+        case "live":
+          setMode("live");
+          return;
+        case "search":
+          openEditorSearch();
+          return;
+        case "image":
+          if (!uploading) imageInputRef.current?.click();
+          return;
+        case "pdf":
+          if (!uploading) pdfInputRef.current?.click();
+          return;
+        case "table":
+          insertTable();
+          return;
+        case "callout":
+          insertCallout();
+          return;
+        case "spoiler":
+          insertSpoiler();
+          return;
+        case "textStyleMenu":
+          setTextStyleMenuOpen((open) => !open);
+          return;
+        case "resetDraft":
+          resetDraft();
+          return;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    insertCallout,
+    insertSpoiler,
+    insertTable,
+    openEditorSearch,
+    resetDraft,
+    uploading,
+  ]);
+
   const editorPane = (
     <MarkdownCodemirror
       ref={editorRef}
@@ -411,117 +522,168 @@ export function MarkdownEditor({
   );
 
   return (
-    <div className="space-y-3">
+    <div className="markdown-editor-root space-y-3">
       <input type="hidden" name={name} value={value} required={required} />
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <label htmlFor={editorId} className="text-sm font-medium">
-          {label}
-        </label>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <label htmlFor={editorId} className="text-sm font-medium">
+            {label}
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
+              <button
+                type="button"
+                className={modeButtonClass(mode === "source")}
+                onClick={() => setMode("source")}
+                title={formatShortcutKeys("Ctrl+Alt+1")}
+              >
+                Source
+              </button>
+              <button
+                type="button"
+                className={modeButtonClass(mode === "split")}
+                onClick={() => setMode("split")}
+                title={formatShortcutKeys("Ctrl+Alt+2")}
+              >
+                Split
+              </button>
+              <button
+                type="button"
+                className={modeButtonClass(mode === "preview")}
+                onClick={() => setMode("preview")}
+                title={formatShortcutKeys("Ctrl+Alt+3")}
+              >
+                Preview
+              </button>
+              <button
+                type="button"
+                className={modeButtonClass(mode === "live")}
+                onClick={() => setMode("live")}
+                title={formatShortcutKeys("Ctrl+Alt+4")}
+              >
+                Live
+              </button>
+            </div>
             <button
               type="button"
-              className={modeButtonClass(mode === "source")}
-              onClick={() => setMode("source")}
+              className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
+              onClick={openEditorSearch}
+              title={`${formatShortcutKeys("Ctrl+Alt+F")} — в редакторе также Ctrl+F / Ctrl+H`}
             >
-              Source
+              Поиск
             </button>
             <button
               type="button"
-              className={modeButtonClass(mode === "split")}
-              onClick={() => setMode("split")}
-            >
-              Split
-            </button>
-            <button
-              type="button"
-              className={modeButtonClass(mode === "preview")}
-              onClick={() => setMode("preview")}
-            >
-              Preview
-            </button>
-            <button
-              type="button"
-              className={modeButtonClass(mode === "live")}
-              onClick={() => setMode("live")}
-            >
-              Live
-            </button>
-          </div>
-          <button
-            type="button"
-            className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
-            onClick={openEditorSearch}
-            title="Ctrl+F — поиск, Ctrl+H — замена"
-          >
-            Поиск
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card disabled:opacity-50"
-            disabled={uploading}
-            onClick={() => imageInputRef.current?.click()}
-          >
-            {uploading ? "Загрузка…" : "Вставить изображение"}
-          </button>
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) handleFile(file);
-              event.target.value = "";
-            }}
-          />
-          <label className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card">
-            PDF
-            <input
-              type="file"
-              accept="application/pdf"
-              className="sr-only"
+              className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card disabled:opacity-50"
               disabled={uploading}
+              onClick={() => imageInputRef.current?.click()}
+              title={formatShortcutKeys("Ctrl+Alt+I")}
+            >
+              {uploading ? "Загрузка…" : "Вставить изображение"}
+            </button>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
               onChange={(event) => {
                 const file = event.target.files?.[0];
-                if (file) void uploadFile(file);
+                if (file) handleFile(file);
                 event.target.value = "";
               }}
             />
-          </label>
-          <button
-            type="button"
-            className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
-            onClick={insertTable}
-          >
-            Таблица
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
-            onClick={insertCallout}
-          >
-            Callout
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
-            onClick={insertSpoiler}
-          >
-            Спойлер
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
-            onClick={() => {
-              clearEditorDraft(draftKey);
-              setValue(initialValue);
-              setMessage("Черновик очищен");
-            }}
-          >
-            Сбросить черновик
-          </button>
+            <label
+              className="cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
+              title={formatShortcutKeys("Ctrl+Alt+P")}
+            >
+              PDF
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf"
+                className="sr-only"
+                disabled={uploading}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadFile(file);
+                  event.target.value = "";
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
+              onClick={insertTable}
+              title={formatShortcutKeys("Ctrl+Alt+T")}
+            >
+              Таблица
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
+              onClick={insertCallout}
+              title={formatShortcutKeys("Ctrl+Alt+C")}
+            >
+              Callout
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
+              onClick={insertSpoiler}
+              title={formatShortcutKeys("Ctrl+Alt+S")}
+            >
+              Спойлер
+            </button>
+            <div className="relative" ref={textStyleMenuRef}>
+              <button
+                type="button"
+                className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
+                onClick={() => setTextStyleMenuOpen((open) => !open)}
+                title={formatShortcutKeys("Ctrl+Alt+G")}
+                aria-expanded={textStyleMenuOpen}
+                aria-haspopup="menu"
+              >
+                Текст ▾
+              </button>
+              {textStyleMenuOpen ? (
+                <div className="markdown-editor-style-menu" role="menu">
+                  {MARKDOWN_TEXT_STYLES.map((style) => (
+                    <button
+                      key={style.id}
+                      type="button"
+                      role="menuitem"
+                      className={`markdown-editor-style-menu-item ${style.previewClass}`}
+                      onClick={() => {
+                        insertTextStyle(style.id);
+                        setTextStyleMenuOpen(false);
+                      }}
+                    >
+                      {style.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-card"
+              onClick={resetDraft}
+              title={formatShortcutKeys("Ctrl+Alt+Shift+R")}
+            >
+              Сбросить черновик
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[0.65rem] text-muted">
+          {EDITOR_SHORTCUTS.map((shortcut) => (
+            <span key={shortcut.id}>
+              {shortcut.label}{" "}
+              <kbd className="markdown-editor-kbd">
+                {formatShortcutKeys(shortcut.keys)}
+              </kbd>
+            </span>
+          ))}
         </div>
       </div>
 
@@ -600,7 +762,10 @@ export function MarkdownEditor({
         CodeMirror: поиск и замена (Ctrl+F / Ctrl+H), подсветка, сворачивание
         заголовков и блоков кода. В режиме Split
         перетащите границу между колонками. Режим Live — предпросмотр с
-        редактированием блока по клику (как в Obsidian). Wikilinks{" "}
+        редактированием блока по клику (как в Obsidian). Стили текста:{" "}
+        <code className="text-[0.7rem]">**жирный**</code>,{" "}
+        <code className="text-[0.7rem]">[semibold]полужирный[/semibold]</code>.
+        Wikilinks{" "}
         <code className="text-[0.7rem]">[[пост|alias]]</code>, callouts{" "}
         <code className="text-[0.7rem]">{`> [!note]`}</code>, теги{" "}
         <code className="text-[0.7rem]">#tag</code>, спойлеры{" "}

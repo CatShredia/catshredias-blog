@@ -14,6 +14,7 @@ import { MarkdownCallout } from "@/components/markdown/markdown-callout";
 import { MarkdownCodeBlock } from "@/components/markdown/markdown-code-block";
 import { MarkdownImage } from "@/components/markdown/markdown-image";
 import { remarkTags } from "@/lib/markdown-tags";
+import { remarkTextStyle, rehypeTextStyle } from "@/lib/markdown-text-style";
 import { splitMarkdownSpoilers } from "@/lib/markdown-spoiler";
 import {
   createRemarkWikiLink,
@@ -59,6 +60,20 @@ function createMarkdownComponents(): Components {
     pre: ({ children, ...props }) => (
       <MarkdownCodeBlock {...props}>{children}</MarkdownCodeBlock>
     ),
+    span: ({ className, children, ...props }) => {
+      if (className?.startsWith("markdown-text-")) {
+        return (
+          <span className={className} {...props}>
+            {children}
+          </span>
+        );
+      }
+      return (
+        <span className={className} {...props}>
+          {children}
+        </span>
+      );
+    },
   };
 }
 
@@ -79,6 +94,7 @@ export function MarkdownBlock({
       remarkGfm,
       createRemarkWikiLink(linkTargets),
       remarkTags,
+      remarkTextStyle,
       remarkAlert,
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stable when slugs/titles unchanged
@@ -88,7 +104,8 @@ export function MarkdownBlock({
   return (
     <ReactMarkdown
       remarkPlugins={remarkPlugins}
-      rehypePlugins={[rehypeHighlight, rehypeSlug]}
+      remarkRehypeOptions={{ allowDangerousHtml: true }}
+      rehypePlugins={[rehypeTextStyle, rehypeHighlight, rehypeSlug]}
       components={markdownComponents}
     >
       {content}
