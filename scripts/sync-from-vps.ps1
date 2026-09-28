@@ -18,7 +18,7 @@ $RemoteProject = "/home/deploy/catshredias-blog"
 # Имя файла дампа в $RemoteProject/backups/ (пусто = взять самый новый portfolio_db_*.sql.gz)
 $RemoteBackupFile = ""
 # Docker: контейнер Next.js и путь к загрузкам внутри контейнера
-$RemoteWebContainer = "portfolio-web"
+$RemoteWebContainer = "catshredia-blog-web"
 $RemoteUploadsPath = "/app/uploads"
 # Корень репозитория на ПК (родитель scripts/)
 $LocalProjectRoot = Split-Path $ScriptDir -Parent
@@ -366,7 +366,7 @@ Add-Report "    Файл: $LocalSqlBackup"
 Add-Report "    Размер: $(Format-Size $localSize)"
 if ($RunRemoteBackupFirst) {
     Add-Report ""
-    Add-Report "[2] Бэкап на VPS (docker portfolio-db)..."
+    Add-Report "[2] Бэкап на VPS (docker catshredia-blog-db)..."
     $backupOut = Invoke-Ssh "cd '$RemoteProject' && bash scripts/backup-db.sh"
     Add-Report (($backupOut | Out-String).Trim())
 }

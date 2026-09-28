@@ -1,8 +1,10 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: portfolio-db
+    container_name: catshredia-blog-db
     restart: unless-stopped
+    networks:
+      - catshredia-blog
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-portfolio_db}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -23,8 +25,10 @@ services:
       dockerfile: Dockerfile
       args:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
-    container_name: portfolio-web
+    container_name: catshredia-blog-web
     restart: unless-stopped
+    networks:
+      - catshredia-blog
     depends_on:
       db:
         condition: service_healthy
@@ -54,6 +58,9 @@ services:
       target: builder
       args:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
+    container_name: catshredia-blog-migrate
+    networks:
+      - catshredia-blog
     depends_on:
       db:
         condition: service_healthy
@@ -70,6 +77,9 @@ services:
       target: builder
       args:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
+    container_name: catshredia-blog-seed
+    networks:
+      - catshredia-blog
     depends_on:
       db:
         condition: service_healthy
@@ -80,6 +90,10 @@ services:
     command: npx prisma db seed
     profiles:
       - tools
+
+networks:
+  catshredia-blog:
+    name: catshredia-blog
 
 volumes:
   portfolio_pg_data:

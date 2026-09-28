@@ -7,6 +7,6 @@ FILE="${BACKUP_DIR}/portfolio_db_${TIMESTAMP}.sql.gz"
 
 mkdir -p "$BACKUP_DIR"
 
-docker exec portfolio-db pg_dump -U postgres portfolio_db | gzip > "$FILE"
+docker exec catshredia-blog-db pg_dump -U postgres portfolio_db | gzip > "$FILE"
 
 echo "Backup saved: $FILE"
